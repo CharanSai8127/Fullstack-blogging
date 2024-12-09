@@ -17,18 +17,16 @@ spec:
           image: mysql:8.0  # Example MySQL image
           ports:
             - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "rootpassword"  # Use a secure password here
-            - name: MYSQL_DATABASE
-              value: "blogdb"  # Name of your database
+          envFrom:
+            - secretRef:
+                name: db-secrets  # Reference to the entire Secret
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
       volumes:
         - name: mysql-storage
           persistentVolumeClaim:
-            claimName: mysql-pvc
+            claimName: pvc-claim  # PVC reference
 ---
 apiVersion: v1
 kind: Service
