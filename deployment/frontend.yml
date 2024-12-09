@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 1  # Single replica for frontend
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: nginx:latest  # Using Nginx as the frontend
+          ports:
+            - containerPort: 80  # Exposing port 80 for Nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: "TCP"
+      port: 80
+      targetPort: 80
+  type: ClusterIP  # Internal service for communication
+
