@@ -17,6 +17,9 @@ spec:
           image: charansait372/blogging:latest
           ports:
             - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: db-secrets
       imagePullSecrets:
         - name: regcred  # Reference to the Docker registry secret
 
