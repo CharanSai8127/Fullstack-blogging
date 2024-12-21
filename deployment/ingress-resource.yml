@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx  # Specify the Ingress class (e.g., nginx for Nginx Ingress Controller)
   rules:
-  - host: devopsblogworkspacenew.com  # Replace with your domain name or the desired hostname
+  - host:  charanfullstackdevopsapp.com  # Replace with your domain name or the desired hostname
     http:
       paths:
       - path: /
