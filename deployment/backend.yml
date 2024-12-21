@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: bloggingapp
-          image: charansait372/blogging:latest
+          image: charansait372/devops-blog:latest
           ports:
             - containerPort: 8080
           envFrom:
