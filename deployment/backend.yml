@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: bloggingapp
-          image: charansait372/devops-blog:${params.DOCKER_TAG}
+          image: charansait372/devops-blog:${TAG}
           ports:
             - containerPort: 8080
           envFrom:
