@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: bloggingapp
-          image: charansait372/devops-blog-new:v3
+          image: charansait372/devops-blog-new:latest
           imagePullPolicy: Always  # Ensure always pulling the latest image
           ports:
             - containerPort: 8080
