@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend-deployment
+  namespace: default
 spec:
-  replicas: 1  # Single replica for frontend
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -13,24 +14,32 @@ spec:
         app: frontend
     spec:
       containers:
-        - name: frontend
-          image: nginx:latest  # Using Nginx as the frontend
+        - name: nginx
+          image: nginx:alpine
           ports:
-            - containerPort: 80  # Exposing port 80 for Nginx
-          env:
-            - name: BACKEND_SERVICE_URL
-              value: "http://bloggingapp-svc:8080"
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
+  namespace: default
 spec:
   selector:
     app: frontend
   ports:
-    - protocol: "TCP"
+    - protocol: TCP
       port: 80
       targetPort: 80
-  type: ClusterIP  # Internal service for communication
-
+  type: ClusterIp
