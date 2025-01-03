@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default  # Adjust namespace where deployments should occur
+  name: argocd-deployment-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "services", "deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
