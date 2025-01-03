@@ -17,4 +17,4 @@ spec:
           service:
             name: bloggingapp-svc
             port:
-              number: 80  # Port exposed by bloggingapp-svc
+              number: 8080  # Port exposed by bloggingapp-svc
