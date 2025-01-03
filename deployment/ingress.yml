@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: backend.charanfullstackdevopsapp.com  # Subdomain for backend access
+  - host: .com  # Subdomain for backend access
     http:
       paths:
       - path: /  # Route for backend
