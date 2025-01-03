@@ -1,28 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: frontend-ingress
+  name: backend-ingress
   namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /  # Rewrite URL paths to the root
 spec:
   ingressClassName: nginx
   rules:
-  - host: charanfullstackdevopsapp.com
+  - host: backend.charanfullstackdevopsapp.com  # Subdomain for backend access
     http:
       paths:
-      - path: /  # Route for frontend
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80  # Port exposed by frontend service
-      - path: /your-endpoint  # Reverse proxy for backend
+      - path: /  # Route for backend
         pathType: Prefix
         backend:
           service:
             name: bloggingapp-svc
             port:
-              number: 8080  # Port exposed by backend service
-
+              number: 80  # Port exposed by bloggingapp-svc
