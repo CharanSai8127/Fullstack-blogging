@@ -1,12 +1,33 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: default  # Adjust namespace where deployments should occur
+  namespace: default  # Namespace where your applications are deployed
   name: argocd-deployment-role
 rules:
+  # Permissions for managing resources in the default namespace (deployments, pods, etc.)
   - apiGroups: [""]
-    resources: ["pods", "pods/exec", "services", "deployments", "replicasets", "statefulsets"]
+    resources: ["pods", "pods/exec", "services", "deployments", "replicasets", "statefulsets", "configmaps", "secrets"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+  # Permissions for managing ArgoCD-specific resources in the argocd namespace
+  - apiGroups: ["argoproj.io"]  # ArgoCD specific resources
+    resources: ["applications", "applicationsets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: argocd  # ArgoCD namespace
+  name: argocd-deployment-role
+rules:
+  # Permissions for managing resources in the argocd namespace (repositories, applications, etc.)
+  - apiGroups: [""]
+    resources: ["pods", "services", "deployments", "replicasets", "statefulsets", "configmaps", "secrets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications", "applicationsets", "repositories"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
