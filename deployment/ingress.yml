@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bloggingapp-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"  # Use NGINX as the ingress controller
+spec:
+  rules:
+    - host: bloggingapp.example.com  # Replace with your domain or leave blank for default
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bloggingapp-svc
+                port:
+                  number: 80
