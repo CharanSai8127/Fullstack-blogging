@@ -3,7 +3,8 @@ kind: Ingress
 metadata:
   name: bloggingapp-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx"  # Use NGINX as the ingress controller
+    kubernetes.io/ingress.class: "nginx"  # Specifies NGINX as the ingress controller
+    nginx.ingress.kubernetes.io/rewrite-target: /login  # Redirects all root (/) traffic to /login
 spec:
   rules:
     - host: bloggingapp.example.com  # Replace with your domain or leave blank for default
