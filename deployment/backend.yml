@@ -1,39 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bloggingapp-deployment
+  name: app-green
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: bloggingapp
+      app: app
+      version: green
   template:
     metadata:
       labels:
-        app: bloggingapp
+        app: app
+        version: green
     spec:
       containers:
-        - name: bloggingapp
-          image: charansait372/devops-blog-new:v1.5
-          imagePullPolicy: Always  # Ensure always pulling the latest image
-          ports:
-            - containerPort: 8080
-          envFrom:
-            - secretRef:
-                name: db-secrets
-      imagePullSecrets:
-        - name: regcred  # Reference to the Docker registry secret
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: bloggingapp-svc
-spec:
-  selector:
-    app: bloggingapp
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-  type: ClusterIP
+      - name: app
+        image: charansait372/node-js:green  # Removed space after colon
+        env:
+        - name: DB_HOST
+          value: "mysql"  # MySQL service name
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password"
+        - name: DB_NAME
+          value: "test_db"
+        ports:
+        - containerPort: 5000
