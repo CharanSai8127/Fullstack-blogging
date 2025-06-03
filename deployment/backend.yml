@@ -19,7 +19,7 @@ spec:
         image: charansait372/node-js:green  # Removed space after colon
         env:
         - name: DB_HOST
-          value: "mysql"  # MySQL service name
+          value: "mysql-service"  # MySQL service name
         - name: DB_USER
           value: "root"
         - name: DB_PASSWORD
