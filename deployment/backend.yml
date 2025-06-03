@@ -16,15 +16,24 @@ spec:
     spec:
       containers:
       - name: app
-        image: charansait372/node-js:green  # Removed space after colon
+        image: charansait372/node-js:green
         env:
         - name: DB_HOST
-          value: "mysql-service"  # MySQL service name
+          value: "mysql-service"
         - name: DB_USER
-          value: "root"
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: MYSQL_USER        # add this key to your secret if not present
         - name: DB_PASSWORD
-          value: "password"
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: MYSQL_PASSWORD    # add this key to your secret if not present
         - name: DB_NAME
-          value: "test_db"
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: MYSQL_DATABASE
         ports:
         - containerPort: 5000
