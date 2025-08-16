@@ -13,27 +13,34 @@ spec:
       labels:
         app: app
         version: green
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "db-backend-role"                   # Vault role for this app
+        vault.hashicorp.com/agent-inject-secret-DB_USER: "secret/data/db:MYSQL_USER"
+        vault.hashicorp.com/agent-inject-secret-DB_PASSWORD: "secret/data/db:MYSQL_PASSWORD"
+        vault.hashicorp.com/agent-inject-secret-DB_NAME: "secret/data/db:MYSQL_DATABASE"
     spec:
+      serviceAccountName: vault                                      # Vault SA
       containers:
-      - name: app
-        image: charansait372/node-js:green
-        env:
-        - name: DB_HOST
-          value: "mysql-service"
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: db-secrets
-              key: MYSQL_USER        # add this key to your secret if not present
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-secrets
-              key: MYSQL_PASSWORD    # add this key to your secret if not present
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: db-secrets
-              key: MYSQL_DATABASE
-        ports:
-        - containerPort: 5000
+        - name: app
+          image: charansait372/node-js:green
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: "mysql-service"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vault-agent-secrets                         # Injected by Vault Agent
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vault-agent-secrets
+                  key: DB_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: vault-agent-secrets
+                  key: DB_NAME
