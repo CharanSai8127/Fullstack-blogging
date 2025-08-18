@@ -1,12 +1,11 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ebs-standard  # Name of the StorageClass
-provisioner: kubernetes.io/aws-ebs  # Provisioner for EBS volumes on AWS
+  name: mysql-sc
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+allowVolumeExpansion: true
 parameters:
-  type: gp2  # Type of volume: General Purpose SSD (you can use 'io1', 'st1', etc.)
-  fsType: ext4  # Filesystem type to format the volume with (e.g., ext4, xfs)
-  iopsPerGb: "10"  # Optional, defines IOPS (for io1 volumes)
-reclaimPolicy: Retain  # Retain the volume after PVC is deleted (can also use Delete)
-volumeBindingMode: Immediate  # Volume is bound immediately when PVC is created
-
+  type: gp3          # General Purpose SSD, can be gp2 or io1 depending on prod needs
+  fsType: ext4
