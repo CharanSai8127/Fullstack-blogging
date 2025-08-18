@@ -2,20 +2,20 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: mysql-network-policy
+  namespace: default
   labels:
     policy: local
 spec:
   podSelector:
     matchLabels:
-      app: mysql  # This applies the policy to MySQL pods
+      app: mysql   # applies to MySQL pods
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app: bloggingapp  # Only allows communication from bloggingapp pods
+              app: app-green   # only backend pods (app-green) can connect
       ports:
         - protocol: TCP
-          port: 3306  # MySQL default port
+          port: 3306          # MySQL default port
   policyTypes:
     - Ingress
-
