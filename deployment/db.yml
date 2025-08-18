@@ -1,9 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: mysql-deployment
+  name: mysql
+  namespace: default
 spec:
-  replicas: 1  # Single replica for the database
+  serviceName: "mysql-service"
+  replicas: 2
   selector:
     matchLabels:
       app: mysql
@@ -11,33 +13,49 @@ spec:
     metadata:
       labels:
         app: mysql
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "db-mysql-role"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/db" -}}
+          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
+          {{- end }}
     spec:
+      serviceAccountName: vault-mysql
       containers:
         - name: mysql
-          image: mysql:8.0  # Example MySQL image
+          image: mysql:8.0
           ports:
             - containerPort: 3306
-          envFrom:
-            - secretRef:
-                name: db-secrets  # Reference to the entire Secret
+          command: ["/bin/sh","-c"]
+          args:
+            - ". /vault/secrets/db && exec mysqld"
           volumeMounts:
-            - name: mysql-storage
+            - name: mysql-data
               mountPath: /var/lib/mysql
-      volumes:
-        - name: mysql-storage
-          persistentVolumeClaim:
-            claimName: pvc-claim  # PVC reference
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
+  namespace: default
 spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  clusterIP: None # Headless for StatefulSet
   selector:
     app: mysql
-  ports:
-    - protocol: "TCP"
-      port: 3306
-      targetPort: 3306
-  type: ClusterIP  # Internal service for communication
 
