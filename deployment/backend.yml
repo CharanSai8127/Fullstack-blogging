@@ -33,6 +33,8 @@ spec:
           ports:
             - containerPort: 5000
           env:
+            - name: VAULT_ADDR
+              vaule: "http://vault-internal.vault.svc:8200"
             - name: DB_HOST
               value: "mysql-service"
           command: ["/bin/sh","-c"]
