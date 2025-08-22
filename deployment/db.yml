@@ -23,7 +23,7 @@ spec:
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
           export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
           {{- end }}
-        vault.hashicorp.com/addr: "http://vault-internal.vault.svc:8200"
+        vault.hashicorp.com/agent-inject-vault-addr: "http://vault-internal.vault.svc:8200"
     spec:
       serviceAccountName: vault-mysql
       containers:
@@ -50,7 +50,6 @@ spec:
           requests:
             storage: 2Gi
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
