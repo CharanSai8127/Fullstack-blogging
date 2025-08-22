@@ -24,7 +24,7 @@ spec:
           export DB_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
           export DB_NAME="{{ .Data.data.MYSQL_DATABASE }}"
           {{- end }}
-        vault.hashicorp.com/addr: "http://vault-internal.vault.svc:8200"
+        vault.hashicorp.com/agent-inject-vault-addr: "http://vault-internal.vault.svc:8200"
     spec:
       serviceAccountName: vault-app-green
       containers:
@@ -34,13 +34,12 @@ spec:
             - containerPort: 5000
           env:
             - name: VAULT_ADDR
-              vaule: "http://vault-internal.vault.svc:8200"
+              value: "http://vault-internal.vault.svc:8200"
             - name: DB_HOST
               value: "mysql-service"
           command: ["/bin/sh","-c"]
           args:
             - ". /vault/secrets/db && exec node /app/server.js"
-
 ---
 apiVersion: v1
 kind: Service
@@ -54,4 +53,3 @@ spec:
   ports:
     - port: 80
       targetPort: 5000
-
