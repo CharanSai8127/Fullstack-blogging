@@ -39,8 +39,7 @@ metadata:
   namespace: default
 spec:
   selector:
-    app: app
-    version: green
+    app: app-green
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 3000
