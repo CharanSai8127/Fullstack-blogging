@@ -31,12 +31,6 @@ spec:
           image: mysql:8.0
           ports:
             - containerPort: 3306
-          env:
-            - name: VAULT_ADDR
-              value: "http://vault-internal.vault.svc:8200"
-          command: ["/bin/sh","-c"]
-          args:
-            - ". /vault/secrets/db && exec mysqld"
           volumeMounts:
             - name: mysql-data
               mountPath: /var/lib/mysql
