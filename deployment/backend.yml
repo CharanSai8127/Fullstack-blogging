@@ -39,7 +39,7 @@ metadata:
   namespace: default
 spec:
   selector:
-    app: app-green
+    app: app-green   # ✅ matches pod label
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: 3000   # ✅ matches containerPort
