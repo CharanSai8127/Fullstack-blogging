@@ -1,3 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-green
+  namespace: default
+spec:
+  selector:
+    app: app-green
+  ports:
+    - port: 80
+      targetPort: 3000
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,25 +33,26 @@ spec:
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
           export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
+          export MYSQL_HOST="mysql"
+          export MYSQL_PORT="3306"
           {{- end }}
+        vault.hashicorp.com/agent-inject-vault-addr: "http://vault-internal.vault.svc:8200"
     spec:
       serviceAccountName: vault-app-green
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z mysql 3306; do echo "waiting for mysql"; sleep 2; done
       containers:
-      - name: app
-        image: charansait372/node-js:green
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 3000
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: app-green
-  namespace: default
-spec:
-  selector:
-    app: app-green   # ✅ matches pod label
-  ports:
-    - port: 80
-      targetPort: 3000   # ✅ matches containerPort
+        - name: app
+          image: charansait372/node-js:green
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - source /vault/secrets/db && exec node index.js
+          ports:
+            - containerPort: 3000
