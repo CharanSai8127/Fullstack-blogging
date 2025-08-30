@@ -1,10 +1,21 @@
-apiVersion: apps/v1
-kind: StatefulSet
+apiVersion: v1
+kind: Service
 metadata:
   name: mysql
   namespace: default
 spec:
-  serviceName: "mysql-service"
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: default
+spec:
   replicas: 2
   selector:
     matchLabels:
@@ -19,9 +30,10 @@ spec:
         vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
-          MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
-          MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
-          MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
+          export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
+          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
           {{- end }}
         vault.hashicorp.com/agent-inject-vault-addr: "http://vault-internal.vault.svc:8200"
     spec:
@@ -34,28 +46,8 @@ spec:
             - source /vault/secrets/db && exec docker-entrypoint.sh mysqld
           ports:
             - containerPort: 3306
-          volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql
-  volumeClaimTemplates:
-    - metadata:
-        name: mysql-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: mysql-sc
-        resources:
-          requests:
-            storage: 2Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql-service
-  namespace: default
-spec:
-  clusterIP: None
-  selector:
-    app: mysql
-  ports:
-    - port: 3306
-      targetPort: 3306
+          readinessProbe:
+            exec:
+              command: ["mysqladmin","ping","-h","127.0.0.1"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
