@@ -8,7 +8,7 @@ spec:
     app: app-green
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -49,10 +49,10 @@ spec:
               until nc -z mysql 3306; do echo "waiting for mysql"; sleep 2; done
       containers:
         - name: app
-          image: charansait372/node-js:green
+          image: charansait372/devops-blog-new
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c"]
+          command: ["sh", "-c"]
           args:
-            - source /vault/secrets/db && exec node index.js
+            - source /vault/secrets/db && exec java -jar /app/blog.jar
           ports:
-            - containerPort: 3000
+            - containerPort: 8080
