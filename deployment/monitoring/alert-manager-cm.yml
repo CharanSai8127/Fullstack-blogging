@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring   # make sure this matches where your alertmanager runs
+labels:
+  app: alertmanager
+data:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+
+    route:
+      receiver: "default-receiver"
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+
+    receivers:
+      - name: "default-receiver"
+        # Example: Send alerts to Slack
+        slack_configs:
+          - api_url: "https://hooks.slack.com/services/TOKEN"
+            channel: "#alerts"
+            send_resolved: true
+
+        # Example: Send alerts to email
+        email_configs:
+          - to: "your-team@example.com"
+            from: "alertmanager@example.com"
+            smarthost: "smtp.example.com:587"
+            auth_username: "alertmanager@example.com"
+            auth_identity: "alertmanager@example.com"
+            auth_password: "changeme"
+            send_resolved: true
+
