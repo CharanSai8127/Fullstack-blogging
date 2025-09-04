@@ -3,12 +3,16 @@ kind: Service
 metadata:
   name: app-green
   namespace: default
+  labels:
+    monitoring: enabled   # 👈 this makes it discoverable by your ServiceMonitor
 spec:
   selector:
     app: app-green
   ports:
-    - port: 80
+    - name: http-metrics   # 👈 name is important for ServiceMonitor to reference
+      port: 80
       targetPort: 8080
+
 ---
 apiVersion: apps/v1
 kind: Deployment
