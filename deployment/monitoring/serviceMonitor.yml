@@ -12,6 +12,7 @@ spec:
   namespaceSelector:
     matchNames:
       - default
+      - nginx-gateway   # added so Prometheus scrapes nginx-gateway too
   endpoints:
     - port: metrics
       interval: 30s
