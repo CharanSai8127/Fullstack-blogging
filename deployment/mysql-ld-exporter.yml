@@ -1,0 +1,61 @@
+---
+# Secret containing the DSN for mysqld-exporter
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-exporter-secret
+  namespace: default
+type: Opaque
+stringData:
+  datasource: "mysql_user:mysql_password@(mysql:3306)/"
+  # Replace mysql_user and mysql_password with values from Vault if needed
+---
+# Deployment for mysqld-exporter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysqld-exporter
+  namespace: default
+  labels:
+    app: mysqld-exporter
+    monitoring: enabled
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysqld-exporter
+  template:
+    metadata:
+      labels:
+        app: mysqld-exporter
+        monitoring: enabled
+    spec:
+      containers:
+        - name: mysqld-exporter
+          image: prom/mysqld-exporter:v0.15.1
+          ports:
+            - containerPort: 9104
+              name: metrics
+          env:
+            - name: DATA_SOURCE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-exporter-secret
+                  key: datasource
+---
+# Service for Prometheus to scrape metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqld-exporter
+  namespace: default
+  labels:
+    monitoring: enabled
+spec:
+  selector:
+    app: mysqld-exporter
+  ports:
+    - name: metrics
+      port: 9104
+      targetPort: 9104
+  type: ClusterIP
