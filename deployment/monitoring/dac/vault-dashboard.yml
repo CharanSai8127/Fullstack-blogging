@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  vault.json: |
+    {
+      "uid": "vault-ha-dashboard",
+      "title": "Vault HA Overview",
+      "schemaVersion": 36,
+      "version": 1,
+      "refresh": "15s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Unsealed (1 = true)",
+          "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+          "targets": [
+            { "expr": "max(vault_unsealed)", "legendFormat": "unsealed" }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Leader (1 = leader)",
+          "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+          "targets": [
+            { "expr": "max(vault_raft_is_leader)", "legendFormat": "leader" }
+          ]
+        },
+        {
+          "type": "graph",
+          "title": "Vault Request Rate",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+          "targets": [
+            { "expr": "sum(rate(vault_request_total[5m]))", "legendFormat": "requests/s" },
+            { "expr": "sum(rate(vault_request_errors_total[5m]))", "legendFormat": "errors/s" }
+          ]
+        }
+      ]
+    }
+
