@@ -5,7 +5,6 @@ metadata:
   namespace: argocd
 spec:
   project: default
-
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
@@ -23,23 +22,20 @@ spec:
               enabled: true
               setNodeId: true
 
-          # --- IRSA service account ---
           serviceAccount:
             create: false
             name: vault-kms
 
-          # --- AWS KMS Auto-Unseal ---
-          extraEnvironmentVars:
-            VAULT_SEAL_TYPE: "awskms"
-            VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
-            VAULT_AWSKMS_REGION: "ap-south-1"
-
-          # --- Seal stanza that Vault requires in config ---
           extraConfig: |
             seal "awskms" {
               region     = "ap-south-1"
               kms_key_id = "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
             }
+
+          extraEnvironmentVars:
+            VAULT_SEAL_TYPE: awskms
+            VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
+            VAULT_AWSKMS_REGION: ap-south-1
 
           listener:
             tcp:
@@ -63,13 +59,7 @@ spec:
             size: 2Gi
             storageClass: vault-storage
 
-          service:
-            type: ClusterIP
-
         injector:
-          enabled: true
-
-        ui:
           enabled: true
 
   destination:
