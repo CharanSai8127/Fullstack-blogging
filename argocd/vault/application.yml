@@ -24,16 +24,10 @@ spec:
               enabled: true
               setNodeId: true
 
-          serviceAccount:
-            create: false
-            name: vault-kms
-
-          extraConfig: |
-            ui = true
-
+          config: |
             seal "awskms" {
-              region     = "ap-south-1"
-              kms_key_id = "arn:aws:kms:ap-south-1:484907487964:key/4bfd0552-1e19-4651-ba27-5a3e486d774c"
+              region     = "{{ env `AWS_REGION` }}"
+              kms_key_id = "{{ env `VAULT_AWSKMS_KEY_ID` }}"
             }
 
             listener "tcp" {
@@ -48,13 +42,15 @@ spec:
 
             service_registration "kubernetes" {}
 
-            disable_mlock = true
+          serviceAccount:
+            create: false
+            name: vault-kms
 
           extraEnvironmentVars:
-            VAULT_SEAL_TYPE: "awskms"
+            VAULT_SEAL_TYPE: awskms
             VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/4bfd0552-1e19-4651-ba27-5a3e486d774c"
-            VAULT_AWSKMS_REGION: "ap-south-1"
-            AWS_REGION: "ap-south-1"
+            VAULT_AWSKMS_REGION: ap-south-1
+            AWS_REGION: ap-south-1
 
           dataStorage:
             enabled: true
