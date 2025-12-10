@@ -5,7 +5,6 @@ metadata:
   namespace: argocd
 spec:
   project: default
-
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
@@ -23,17 +22,10 @@ spec:
               enabled: true
               setNodeId: true
 
-          # ------------------------------
-          # IRSA Service Account (MUST MATCH IAM TRUST POLICY)
-          # ------------------------------
           serviceAccount:
             create: false
             name: vault-kms
 
-          # ------------------------------
-          # Vault Seal Configuration (CRITICAL)
-          # This writes into extraconfig-from-values.hcl
-          # ------------------------------
           extraConfig: |
             seal "awskms" {
               region     = "ap-south-1"
@@ -52,10 +44,6 @@ spec:
 
             service_registration "kubernetes" {}
 
-          # ------------------------------
-          # These env vars help Vault detect region/key at runtime,
-          # but the REAL seal config is in extraConfig above.
-          # ------------------------------
           extraEnvironmentVars:
             VAULT_SEAL_TYPE: awskms
             VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
@@ -68,9 +56,6 @@ spec:
             storageClass: vault-storage
 
         injector:
-          enabled: true
-
-        ui:
           enabled: true
 
   destination:
