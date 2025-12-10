@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://helm.releases.hashicorp.com
+    chart: vault
+    targetRevision: 0.28.0
+    helm:
+      values: |
+        global:
+          tlsDisable: true
+
+        server:
+          ha:
+            enabled: true
+            replicas: 3
+            raft:
+              enabled: true
+              setNodeId: true
+
+          serviceAccount:
+            create: false
+            name: vault-kms
+
+          extraEnvironmentVars:
+            VAULT_SEAL_TYPE: "awskms"
+            VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
+            VAULT_AWSKMS_REGION: "ap-south-1"
+
+          listener:
+            tcp:
+              address: "[::]:8200"
+              clusterAddress: "[::]:8201"
+              tlsDisable: true
+
+          storage:
+            raft:
+              path: "/vault/data"
+              retryJoin:
+                - leaderApiAddr: "http://vault-0.vault-internal:8200"
+                - leaderApiAddr: "http://vault-1.vault-internal:8200"
+                - leaderApiAddr: "http://vault-2.vault-internal:8200"
+
+          ui:
+            enabled: true
+
+          dataStorage:
+            enabled: true
+            size: 2Gi
+            storageClass: vault-storage
+
+          service:
+            type: ClusterIP
+
+        injector:
+          enabled: true
+
+        ui:
+          enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
