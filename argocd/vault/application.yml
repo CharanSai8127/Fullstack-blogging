@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
 spec:
   project: default
+
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
@@ -23,23 +24,23 @@ spec:
               enabled: true
               setNodeId: true
 
-            config: |
-              seal "awskms" {
-                region     = "{{ env `AWS_REGION` }}"
-                kms_key_id = "{{ env `VAULT_AWSKMS_KEY_ID` }}"
-              }
+          config: |
+            seal "awskms" {
+              region     = "{{ env `AWS_REGION` }}"
+              kms_key_id = "{{ env `VAULT_AWSKMS_KEY_ID` }}"
+            }
 
-              listener "tcp" {
-                address         = "[::]:8200"
-                cluster_address = "[::]:8201"
-                tls_disable     = 1
-              }
+            listener "tcp" {
+              address         = "[::]:8200"
+              cluster_address = "[::]:8201"
+              tls_disable     = 1
+            }
 
-              storage "raft" {
-                path = "/vault/data"
-              }
+            storage "raft" {
+              path = "/vault/data"
+            }
 
-              service_registration "kubernetes" {}
+            service_registration "kubernetes" {}
 
           serviceAccount:
             create: false
@@ -47,7 +48,7 @@ spec:
 
           extraEnvironmentVars:
             VAULT_SEAL_TYPE: "awskms"
-            VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
+            VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/4bfd0552-1e19-4651-ba27-5a3e486d774c"
             VAULT_AWSKMS_REGION: "ap-south-1"
             AWS_REGION: "ap-south-1"
 
