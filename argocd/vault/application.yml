@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
-    targetRevision: 0.29.0    # <-- FIX: upgrade to version where extraConfig works in HA mode
+    targetRevision: 0.29.0
     helm:
       values: |
         global:
@@ -23,37 +23,37 @@ spec:
               enabled: true
               setNodeId: true
 
+            config: |
+              seal "awskms" {
+                region     = "{{ env `AWS_REGION` }}"
+                kms_key_id = "{{ env `VAULT_AWSKMS_KEY_ID` }}"
+              }
+
+              listener "tcp" {
+                address         = "[::]:8200"
+                cluster_address = "[::]:8201"
+                tls_disable     = 1
+              }
+
+              storage "raft" {
+                path = "/vault/data"
+              }
+
+              service_registration "kubernetes" {}
+
           serviceAccount:
             create: false
             name: vault-kms
 
-          extraConfig: |
-            seal "awskms" {
-              region     = "ap-south-1"
-              kms_key_id = "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
-            }
-
-            listener "tcp" {
-              address         = "[::]:8200"
-              cluster_address = "[::]:8201"
-              tls_disable     = 1
-            }
-
-            storage "raft" {
-              path = "/vault/data"
-            }
-
-            service_registration "kubernetes" {}
-
           extraEnvironmentVars:
-            VAULT_SEAL_TYPE: awskms
+            VAULT_SEAL_TYPE: "awskms"
             VAULT_AWSKMS_KEY_ID: "arn:aws:kms:ap-south-1:484907487964:key/5ad995a5-5b0f-4196-af6c-d8a8e3bba8c6"
-            VAULT_AWSKMS_REGION: ap-south-1
-            AWS_REGION: ap-south-1
+            VAULT_AWSKMS_REGION: "ap-south-1"
+            AWS_REGION: "ap-south-1"
 
           dataStorage:
             enabled: true
-            size: 1Gi
+            size: 2Gi
             storageClass: vault-storage
 
         injector:
@@ -65,7 +65,7 @@ spec:
 
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
