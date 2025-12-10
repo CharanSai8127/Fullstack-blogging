@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
-    targetRevision: 0.29.0
+    targetRevision: 0.29.0    # <-- FIX: upgrade to version where extraConfig works in HA mode
     helm:
       values: |
         global:
