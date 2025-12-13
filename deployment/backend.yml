@@ -4,15 +4,14 @@ metadata:
   name: app-green
   namespace: default
   labels:
-    monitoring: enabled   # 👈 this makes it discoverable by your ServiceMonitor
+    monitoring: enabled # discoverable by ServiceMonitor
 spec:
   selector:
     app: app-green
   ports:
-    - name: http-metrics   # 👈 name is important for ServiceMonitor to reference
+    - name: http-metrics # ServiceMonitor to reference
       port: 80
       targetPort: 8080
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,9 +30,9 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "db-backend-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secrets/data/db"
         vault.hashicorp.com/agent-inject-template-db: |
-          {{- with secret "secret/data/db" -}}
+          {{- with secret "secrets/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
@@ -41,7 +40,6 @@ spec:
           export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
           export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
-        vault.hashicorp.com/agent-inject-vault-addr: "http://vault-internal.vault.svc:8200"
     spec:
       serviceAccountName: vault-app-green
       initContainers:
