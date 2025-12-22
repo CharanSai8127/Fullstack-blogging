@@ -1,0 +1,46 @@
+server:
+  ha:
+    enabled: true
+
+    raft:
+      enabled: true
+      setNodeId: true   # CRITICAL for stable Raft node identity
+
+      config: |
+        ui = true
+        disable_mlock = true
+
+        listener "tcp" {
+          address     = "0.0.0.0:8200"
+          tls_disable = 1
+        }
+
+        seal "awskms" {
+          region     = "ap-south-1"
+          kms_key_id = "arn:aws:kms:ap-south-1:484907487964:key/1ba0edbe-6898-4bb4-8069-b6cee0091a7f"
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+        }
+
+        service_registration "kubernetes" {}
+
+    replicas: 1   #  START WITH 1 — scale later
+
+  serviceAccount:
+    create: false
+    name: vault-sa
+
+  dataStorage:
+    enabled: true
+    storageClass: vault-storage
+    accessMode: ReadWriteOnce
+    size: 1Gi
+
+  readinessProbe:
+    enabled: true
+
+  statefulSet:
+    enabled: true
+    podManagementPolicy: OrderedReady
