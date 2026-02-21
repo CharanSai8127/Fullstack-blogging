@@ -14,7 +14,10 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: blogging-app-tls  # references cert-manager secret
+            name: blogging-app-tls
       allowedRoutes:
         namespaces:
-          from: All  # allow routes from any namespace
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

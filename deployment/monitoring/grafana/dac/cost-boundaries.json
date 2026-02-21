@@ -1,0 +1,61 @@
+{
+  "id": null,
+  "uid": "cost-boundaries",
+  "title": "Guardrail 01 - Cost Boundaries",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "CPU Usage / Requests",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"blog-prod\",pod=~\"app-green-.*\"}[5m])) / sum(kube_pod_container_resource_requests_cpu_cores{namespace=\"blog-prod\",pod=~\"app-green-.*\"})"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Memory Usage / Limits",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(container_memory_usage_bytes{namespace=\"blog-prod\",pod=~\"app-green-.*\"}) / sum(kube_pod_container_resource_limits_memory_bytes{namespace=\"blog-prod\",pod=~\"app-green-.*\"})"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Replica Count",
+      "gridPos": { "x": 0, "y": 4, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas{namespace=\"blog-prod\",deployment=\"app-green\"}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "HPA Desired",
+      "gridPos": { "x": 4, "y": 4, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"blog-prod\"}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "PVC Usage",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"blog-prod\"}",
+          "legendFormat": "{{persistentvolumeclaim}}"
+        }
+      ]
+    }
+  ]
+}

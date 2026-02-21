@@ -1,0 +1,40 @@
+{
+  "id": null,
+  "uid": "rollback-observability",
+  "title": "Guardrail 06 - Rollback Observability",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Deployment Generation",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_deployment_metadata_generation{namespace=\"blog-prod\",deployment=\"app-green\"}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "ReplicaSet Changes",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "count(kube_replicaset_owner{namespace=\"blog-prod\"})"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Restart Spike (10m)",
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"blog-prod\"}[10m])"
+        }
+      ]
+    }
+  ]
+}

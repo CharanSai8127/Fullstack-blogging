@@ -1,0 +1,41 @@
+{
+  "id": null,
+  "uid": "security-boundaries",
+  "title": "Guardrail 02 - Security & Isolation",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Pod Restarts (30m)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"blog-prod\"}[30m])"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Vault Errors /s",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(vault_request_errors_total[5m]))"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Network Drops (if Cilium)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(cilium_drop_count_total[5m]))",
+          "legendFormat": "drops"
+        }
+      ]
+    }
+  ]
+}

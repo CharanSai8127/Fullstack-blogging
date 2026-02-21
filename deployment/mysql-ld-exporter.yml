@@ -1,26 +1,19 @@
 ---
-# Secret containing the DSN for mysqld-exporter
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mysql-exporter-secret
-  namespace: default
-type: Opaque
-stringData:
-  datasource: "mysql_user:mysql_password@(mysql:3306)/"
-  # Replace mysql_user and mysql_password with values from Vault if needed
----
-# Deployment for mysqld-exporter
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysqld-exporter
-  namespace: default
+  namespace: blog-prod
   labels:
     app: mysqld-exporter
     monitoring: enabled
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: mysqld-exporter
@@ -29,26 +22,74 @@ spec:
       labels:
         app: mysqld-exporter
         monitoring: enabled
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "mysql-role"
+        vault.hashicorp.com/agent-inject-secret-db: "secrets/data/db"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secrets/data/db" -}}
+          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
+          export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
+          {{- end }}
     spec:
+      serviceAccountName: vault-mysql
+      terminationGracePeriodSeconds: 20
+
       containers:
         - name: mysqld-exporter
           image: prom/mysqld-exporter:v0.15.1
+          imagePullPolicy: IfNotPresent
+
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+          command: ["sh", "-c"]
+          args:
+            - >
+              source /vault/secrets/db &&
+              export DATA_SOURCE_NAME="$MYSQL_USER:$MYSQL_PASSWORD@($MYSQL_HOST:$MYSQL_PORT)/" &&
+              exec /bin/mysqld_exporter
+
           ports:
             - containerPort: 9104
               name: metrics
-          env:
-            - name: DATA_SOURCE_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-exporter-secret
-                  key: datasource
+
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9104
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9104
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 5
 ---
-# Service for Prometheus to scrape metrics
 apiVersion: v1
 kind: Service
 metadata:
   name: mysqld-exporter
-  namespace: default
+  namespace: blog-prod
   labels:
     monitoring: enabled
 spec:

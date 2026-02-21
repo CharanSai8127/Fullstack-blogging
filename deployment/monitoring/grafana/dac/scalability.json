@@ -1,0 +1,40 @@
+{
+  "id": null,
+  "uid": "scalability",
+  "title": "Guardrail 04 - Scalability",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "HPA Current",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"blog-prod\"}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "HPA Desired",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"blog-prod\"}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "CPU Utilization",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"blog-prod\",pod=~\"app-green-.*\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

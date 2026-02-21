@@ -2,14 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: app-green
-  namespace: default
+  namespace: blog-prod
   labels:
-    monitoring: enabled # discoverable by ServiceMonitor
+    monitoring: enabled
 spec:
   selector:
     app: app-green
   ports:
-    - name: http-metrics # ServiceMonitor to reference
+    - name: metrics
       port: 80
       targetPort: 8080
 ---
@@ -17,9 +17,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-green
-  namespace: default
+  namespace: blog-prod
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: app-green
@@ -42,20 +47,38 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-app-green
-      initContainers:
-        - name: wait-for-mysql
-          image: busybox
-          command:
-            - sh
-            - -c
-            - >
-              until nc -z mysql 3306; do echo "waiting for mysql"; sleep 2; done
+      terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: charansait372/devops-blog-new
+          image: charansait372/devops-blog-new:1.5
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
           command: ["sh", "-c"]
           args:
             - source /vault/secrets/db && exec java -jar /usr/src/app/app.jar
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10

@@ -1,0 +1,30 @@
+{
+  "id": null,
+  "uid": "gitops-ownership",
+  "title": "Guardrail 05 - GitOps Ownership",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "ArgoCD Health",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "argocd_app_health_status"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "ArgoCD Sync Status",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "argocd_app_sync_status"
+        }
+      ]
+    }
+  ]
+}

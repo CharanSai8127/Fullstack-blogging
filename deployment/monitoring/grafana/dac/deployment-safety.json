@@ -1,0 +1,40 @@
+{
+  "id": null,
+  "uid": "deployment-safety",
+  "title": "Guardrail 03 - Deployment Safety",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Ready Replicas",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"blog-prod\",deployment=\"app-green\"}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Unavailable Replicas",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_unavailable{namespace=\"blog-prod\",deployment=\"app-green\"}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "5xx Errors /s",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"blog-prod\",status=~\"5..\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

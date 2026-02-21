@@ -7,13 +7,18 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: app-green   # matches your backend deployment
-  minReplicas: 2       # minimum number of pods
-  maxReplicas: 5       # maximum number of pods
+    name: app-green
+  minReplicas: 1
+  maxReplicas: 5
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 80   # scale when avg CPU > 80%
+          averageUtilization: 70

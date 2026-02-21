@@ -2,41 +2,42 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: app-mysql-alerts
-  namespace: default
+  namespace: monitoring
   labels:
-    release: kube-prometheus-stack   # must match your Prometheus release name
+    release: kube-prometheus-stack
 spec:
   groups:
   - name: app-green.rules
     rules:
     - alert: AppGreenDown
-      expr: kube_deployment_status_replicas_available{deployment="app-green"} == 0
+      expr: kube_deployment_status_replicas_available{deployment="app-green",namespace="blog-prod"} == 0
       for: 2m
       labels:
         severity: critical
       annotations:
         summary: "App-green deployment has no replicas"
-        description: "No available replicas for app-green in namespace {{ $labels.namespace }}."
+        description: "No available replicas for app-green in blog-prod."
     - alert: AppGreenHighCPU
-      expr: rate(container_cpu_usage_seconds_total{pod=~"app-green-.*"}[5m]) > 0.8
+      expr: rate(container_cpu_usage_seconds_total{namespace="blog-prod",pod=~"app-green-.*"}[5m]) > 0.8
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: "App-green using high CPU"
         description: "CPU usage for app-green is above 80% for more than 5 minutes."
+
   - name: mysql.rules
     rules:
     - alert: MySQLDown
-      expr: mysql_up == 0
+      expr: mysql_up{namespace="blog-prod"} == 0
       for: 1m
       labels:
         severity: critical
       annotations:
         summary: "MySQL is down"
-        description: "mysqld-exporter reports MySQL is not responding in namespace {{ $labels.namespace }}."
+        description: "mysqld-exporter reports MySQL is not responding in blog-prod."
     - alert: MySQLHighConnections
-      expr: mysql_global_status_threads_connected > 100
+      expr: mysql_global_status_threads_connected{namespace="blog-prod"} > 100
       for: 5m
       labels:
         severity: warning

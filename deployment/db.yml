@@ -28,10 +28,12 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mysql
-  namespace: default
+  namespace: blog-prod
 spec:
   serviceName: "mysql-headless"
   replicas: 1
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: mysql
@@ -54,23 +56,65 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysql
+      terminationGracePeriodSeconds: 60
+
+      securityContext:
+        fsGroup: 999
+
       containers:
         - name: mysql
-          image: mysql:8.0
+          image: mysql:8.0.36
+          imagePullPolicy: IfNotPresent
+
+          securityContext:
+            runAsNonRoot: false   # MySQL official image requires root startup
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
           command: ["/bin/sh", "-c"]
           args:
             - source /vault/secrets/db && exec docker-entrypoint.sh mysqld
+
           ports:
             - containerPort: 3306
               name: mysql
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+
           readinessProbe:
             exec:
-              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
-            initialDelaySeconds: 10
-            periodSeconds: 5
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - 127.0.0.1
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 5
+
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - 127.0.0.1
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
+
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql
+
   volumeClaimTemplates:
     - metadata:
         name: mysql-persistent-storage
@@ -80,4 +124,5 @@ spec:
         storageClassName: mysql-sc
         resources:
           requests:
-            storage: 1Gi
+            storage: 5Gi
+
