@@ -1,17 +1,17 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: app-green
   namespace: blog-prod
-  labels:
-    monitoring: enabled
 spec:
   selector:
     app: app-green
   ports:
-    - name: metrics
+    - name: http
       port: 80
       targetPort: 8080
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -20,14 +20,17 @@ metadata:
   namespace: blog-prod
 spec:
   replicas: 1
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
+
   selector:
     matchLabels:
       app: app-green
+
   template:
     metadata:
       labels:
@@ -45,19 +48,27 @@ spec:
           export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
           export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
+
     spec:
       serviceAccountName: vault-app-green
       terminationGracePeriodSeconds: 30
+
       containers:
         - name: app
           image: charansait372/devops-blog-new:1.5
           imagePullPolicy: IfNotPresent
+
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
+
+          command: ["sh", "-c"]
+          args:
+            - source /vault/secret/db && exec java -jar /usr/src/app/app.jar
+
+          ports:
+            - containerPort: 8080
+
           resources:
             requests:
               cpu: "250m"
@@ -65,20 +76,19 @@ spec:
             limits:
               cpu: "500m"
               memory: "1Gi"
-          command: ["sh", "-c"]
-          args:
-            - source /vault/secrets/db && exec java -jar /usr/src/app/app.jar
-          ports:
-            - containerPort: 8080
+
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 5
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+
           livenessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            failureThreshold: 5
