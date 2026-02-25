@@ -6,14 +6,8 @@ metadata:
   namespace: blog-prod
   labels:
     app: mysqld-exporter
-    monitoring: enabled
 spec:
   replicas: 1
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
   selector:
     matchLabels:
       app: mysqld-exporter
@@ -21,7 +15,6 @@ spec:
     metadata:
       labels:
         app: mysqld-exporter
-        monitoring: enabled
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "mysql-exporter-role"
@@ -35,28 +28,14 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysqld-exporter
-      terminationGracePeriodSeconds: 20
-
       containers:
         - name: mysqld-exporter
           image: prom/mysqld-exporter:v0.15.1
           imagePullPolicy: IfNotPresent
-
           securityContext:
-            runAsNonRoot: true
+            runAsUser: 65534
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
 
           command: ["sh", "-c"]
           args:
@@ -90,8 +69,6 @@ kind: Service
 metadata:
   name: mysqld-exporter
   namespace: blog-prod
-  labels:
-    monitoring: enabled
 spec:
   selector:
     app: mysqld-exporter
@@ -100,3 +77,15 @@ spec:
       port: 9104
       targetPort: 9104
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-green
+  namespace: blog-prod
+spec:
+  selector:
+    app: app-green
+  ports:
+    - port: 80
+      targetPort: 8080
