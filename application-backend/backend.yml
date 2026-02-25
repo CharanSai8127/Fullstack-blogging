@@ -64,7 +64,7 @@ spec:
 
           command: ["sh", "-c"]
           args:
-            - source /vault/secret/db && exec java -jar /usr/src/app/app.jar
+            - source /vault/secrets/db && exec java -jar /usr/src/app/app.jar
 
           ports:
             - containerPort: 8080
