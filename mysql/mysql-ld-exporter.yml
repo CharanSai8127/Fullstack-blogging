@@ -34,7 +34,7 @@ spec:
           export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
     spec:
-      serviceAccountName: vault-mysql
+      serviceAccountName: vault-mysqld-exporter
       terminationGracePeriodSeconds: 20
 
       containers:
