@@ -70,7 +70,7 @@ spec:
 
           command: ["/bin/sh", "-c"]
           args:
-            - source /vault/secret/db && exec docker-entrypoint.sh mysqld
+            - source /vault/secrets/db && exec docker-entrypoint.sh mysqld
 
           ports:
             - containerPort: 3306
