@@ -36,14 +36,14 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-          command: ["/bin/sh", "-c"]
+          command:
+            - /bin/sh
+            - -c
           args:
             - |
               source /vault/secrets/db
-              exec /bin/mysqld_exporter \
-                --mysqld.username=$MYSQL_USER \
-                --mysqld.password=$MYSQL_PASSWORD \
-                --mysqld.address=$MYSQL_HOST:$MYSQL_PORT
+              export DATA_SOURCE_NAME="${MYSQL_USER}:${MYSQL_PASSWORD}@(${MYSQL_HOST}:${MYSQL_PORT})/"
+              exec /bin/mysqld_exporter
           ports:
             - containerPort: 9104
               name: metrics
