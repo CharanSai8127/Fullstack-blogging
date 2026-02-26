@@ -4,10 +4,10 @@ kind: Deployment
 metadata:
   name: mysqld-exporter
   namespace: blog-prod
-  labels:
-    app: mysqld-exporter
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: mysqld-exporter
@@ -28,41 +28,44 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysqld-exporter
+      terminationGracePeriodSeconds: 20
       containers:
         - name: mysqld-exporter
           image: prom/mysqld-exporter:v0.15.1
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 65534
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-
-          command: ["sh", "-c"]
+          command: ["/bin/sh", "-c"]
           args:
-            - >
-              source /vault/secrets/db &&
-              export DATA_SOURCE_NAME="$MYSQL_USER:$MYSQL_PASSWORD@($MYSQL_HOST:$MYSQL_PORT)/" &&
-              exec /bin/mysqld_exporter
-
+            - |
+              source /vault/secrets/db
+              exec /bin/mysqld_exporter \
+                --mysqld.username=$MYSQL_USER \
+                --mysqld.password=$MYSQL_PASSWORD \
+                --mysqld.address=$MYSQL_HOST:$MYSQL_PORT
           ports:
             - containerPort: 9104
               name: metrics
-
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
           readinessProbe:
             httpGet:
               path: /metrics
               port: 9104
             initialDelaySeconds: 10
             periodSeconds: 10
-            failureThreshold: 3
-
           livenessProbe:
             httpGet:
               path: /metrics
               port: 9104
             initialDelaySeconds: 30
             periodSeconds: 20
-            failureThreshold: 5
 ---
 apiVersion: v1
 kind: Service
@@ -77,15 +80,3 @@ spec:
       port: 9104
       targetPort: 9104
   type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: app-green
-  namespace: blog-prod
-spec:
-  selector:
-    app: app-green
-  ports:
-    - port: 80
-      targetPort: 8080

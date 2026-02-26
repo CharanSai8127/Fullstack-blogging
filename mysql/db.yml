@@ -5,12 +5,12 @@ metadata:
   name: mysql-headless
   namespace: blog-prod
 spec:
+  clusterIP: None
   selector:
     app: mysql
   ports:
     - port: 3306
       name: mysql
-  clusterIP: None
 ---
 apiVersion: v1
 kind: Service
@@ -31,7 +31,7 @@ metadata:
   name: mysql
   namespace: blog-prod
 spec:
-  serviceName: "mysql-headless"
+  serviceName: mysql-headless
   replicas: 1
   selector:
     matchLabels:
@@ -50,32 +50,25 @@ spec:
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
           export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
-          export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
-          export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
     spec:
       serviceAccountName: vault-mysql
       terminationGracePeriodSeconds: 60
       securityContext:
         fsGroup: 999
-
       containers:
         - name: mysql
           image: mysql:8.0.36
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 999
-            runAsGroup: 999
+            runAsUser: 0
             allowPrivilegeEscalation: false
-
           command: ["/bin/sh", "-c"]
           args:
             - source /vault/secrets/db && exec docker-entrypoint.sh mysqld
-
           ports:
             - containerPort: 3306
               name: mysql
-
           resources:
             requests:
               cpu: "500m"
@@ -83,7 +76,6 @@ spec:
             limits:
               cpu: "1"
               memory: "2Gi"
-
           readinessProbe:
             exec:
               command:
@@ -93,8 +85,6 @@ spec:
                 - 127.0.0.1
             initialDelaySeconds: 20
             periodSeconds: 10
-            failureThreshold: 5
-
           livenessProbe:
             exec:
               command:
@@ -104,12 +94,9 @@ spec:
                 - 127.0.0.1
             initialDelaySeconds: 60
             periodSeconds: 20
-            failureThreshold: 5
-
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql
-
   volumeClaimTemplates:
     - metadata:
         name: mysql-persistent-storage
@@ -119,4 +106,4 @@ spec:
         storageClassName: mysql-sc
         resources:
           requests:
-            storage: 5Gi
+            storage: 2Gi
