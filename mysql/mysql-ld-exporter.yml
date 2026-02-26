@@ -23,8 +23,6 @@ spec:
           {{- with secret "secret/data/db" -}}
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
-          export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
-          export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
     spec:
       serviceAccountName: vault-mysqld-exporter
@@ -41,8 +39,9 @@ spec:
             - -c
           args:
             - |
+              set -e
               source /vault/secrets/db
-              export DATA_SOURCE_NAME="${MYSQL_USER}:${MYSQL_PASSWORD}@(${MYSQL_HOST}:${MYSQL_PORT})/"
+              export DATA_SOURCE_NAME="${MYSQL_USER}:${MYSQL_PASSWORD}@(mysql:3306)/"
               exec /bin/mysqld_exporter
           ports:
             - containerPort: 9104
