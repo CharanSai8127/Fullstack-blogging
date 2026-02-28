@@ -15,17 +15,7 @@ spec:
     metadata:
       labels:
         app: mysqld-exporter
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "mysql-exporter-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
-        vault.hashicorp.com/agent-inject-template-db: |
-          {{- with secret "secret/data/db" -}}
-          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
-          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
-          {{- end }}
     spec:
-      serviceAccountName: vault-mysqld-exporter
       terminationGracePeriodSeconds: 20
       containers:
         - name: mysqld-exporter
@@ -34,18 +24,18 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-          command:
-            - /bin/sh
-            - -c
-          args:
-            - |
-              set -e
-              source /vault/secrets/db
-              export DATA_SOURCE_NAME="${MYSQL_USER}:${MYSQL_PASSWORD}@(mysql:3306)/"
-              exec /bin/mysqld_exporter
+
+          env:
+            - name: DATA_SOURCE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-exporter-secret
+                  key: DATA_SOURCE_NAME
+
           ports:
             - containerPort: 9104
               name: metrics
+
           resources:
             requests:
               cpu: "100m"
@@ -53,18 +43,21 @@ spec:
             limits:
               cpu: "250m"
               memory: "256Mi"
+
           readinessProbe:
             httpGet:
               path: /metrics
               port: 9104
             initialDelaySeconds: 10
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /metrics
               port: 9104
             initialDelaySeconds: 30
             periodSeconds: 20
+
 ---
 apiVersion: v1
 kind: Service
