@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-init-job
+  namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "mysql-role"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/db" -}}
+          export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
+          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
+          {{- end }}
+    spec:
+      serviceAccountName: vault-mysql
+      restartPolicy: OnFailure
+
+      containers:
+        - name: mysql-init
+          image: mysql:8.0.36
+          imagePullPolicy: IfNotPresent
+
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for MySQL to be ready..."
+              until mysql -h mysql.blog-prod.svc.cluster.local -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do
+                sleep 5
+              done
+
+              echo "Creating database and users..."
+
+              mysql -h mysql.blog-prod.svc.cluster.local -u root -p$MYSQL_ROOT_PASSWORD <<EOF
+              CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
+
+              CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
+              GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
+
+              CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
+              GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+
+              FLUSH PRIVILEGES;
+              EOF
+
+              echo "MySQL initialization completed."
