@@ -50,7 +50,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: charansait372/devops-blog-new:1.5
+          image: charansait372/devops-blog-new:1.6
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
