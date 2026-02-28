@@ -2,7 +2,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: app-green-hpa
-  namespace: default
+  namespace: blog-prod
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
