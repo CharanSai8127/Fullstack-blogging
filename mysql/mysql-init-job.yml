@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
-  backoffLimit: 5
+  backoffLimit: 3
   template:
     metadata:
       annotations:
@@ -23,23 +23,29 @@ spec:
     spec:
       serviceAccountName: vault-mysql
       restartPolicy: OnFailure
-
       containers:
         - name: mysql-init
           image: mysql:8.0.36
           imagePullPolicy: IfNotPresent
-
           command: ["/bin/sh", "-c"]
           args:
             - |
+              source /vault/secrets/db
+
               echo "Waiting for MySQL to be ready..."
-              until mysql -h mysql.blog-prod.svc.cluster.local -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do
+              until mysql -h mysql.blog-prod.svc.cluster.local \
+                         -u root \
+                         -p"$MYSQL_ROOT_PASSWORD" \
+                         -e "SELECT 1"; do
                 sleep 5
               done
 
-              echo "Creating database and users..."
+              echo "Creating database, users and tables..."
 
-              mysql -h mysql.blog-prod.svc.cluster.local -u root -p$MYSQL_ROOT_PASSWORD <<EOF
+              mysql -h mysql.blog-prod.svc.cluster.local \
+                    -u root \
+                    -p"$MYSQL_ROOT_PASSWORD" <<EOF
+
               CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
 
               CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
@@ -48,7 +54,21 @@ spec:
               CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
               GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
 
+              USE $MYSQL_DATABASE;
+
+              CREATE TABLE IF NOT EXISTS user (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255),
+                password VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS post (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                content TEXT,
+                user_id BIGINT
+              );
+
               FLUSH PRIVILEGES;
               EOF
 
-              echo "MySQL initialization completed."
+              echo "MySQL initialization completed successfully."
