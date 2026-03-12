@@ -1,0 +1,41 @@
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      role: platform
+
+    tolerations:
+      - key: platform
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+
+grafana:
+  nodeSelector:
+    role: platform
+
+  tolerations:
+    - key: platform
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      role: platform
+
+    tolerations:
+      - key: platform
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+
+kube-state-metrics:
+  nodeSelector:
+    role: platform
+
+  tolerations:
+    - key: platform
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

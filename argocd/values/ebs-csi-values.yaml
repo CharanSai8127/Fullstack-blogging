@@ -1,0 +1,20 @@
+controller:
+  serviceAccount:
+    create: false
+    name: ebs-csi-controller
+
+  nodeSelector:
+    role: platform
+
+  tolerations:
+    - key: platform
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
+node:
+  serviceAccount:
+    create: true
+
+  tolerations:
+    - operator: Exists

@@ -5,23 +5,23 @@ metadata:
   namespace: argocd
 spec:
   project: default
+
   source:
     repoURL: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
     chart: aws-ebs-csi-driver
     targetRevision: 2.30.0
     helm:
-      values: |-
-        controller:
-          serviceAccount:
-            name: ebs-csi-controller
-            create: false
+      valueFiles:
+        - ebs-csi-values.yaml
+
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
+
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+
+  syncOptions:
+    - CreateNamespace=true

@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blog-parent
+  namespace: argocd
+spec:
+  project: application-project
+
+  source:
+    repoURL: https://github.com/CharanSai8127/Fullstack-blogging
+    targetRevision: main
+    path: argocd/app-workloads
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
