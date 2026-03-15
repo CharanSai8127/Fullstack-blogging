@@ -3,8 +3,10 @@ kind: Application
 metadata:
   name: nginx-gateway
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
 spec:
-  project: default
+  project: platform-project
 
   source:
     repoURL: https://helm.nginx.com/stable
@@ -12,7 +14,7 @@ spec:
     targetRevision: 1.3.0
     helm:
       valueFiles:
-        - nginx-gateway-values.yaml
+        - ../values/nginx-gateway-values.yaml
 
   destination:
     server: https://kubernetes.default.svc

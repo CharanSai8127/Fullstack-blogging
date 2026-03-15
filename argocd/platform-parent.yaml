@@ -3,8 +3,10 @@ kind: Application
 metadata:
   name: platform-parent
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
-  project: default
+  project: platform-project
 
   source:
     repoURL: https://github.com/CharanSai8127/Fullstack-blogging

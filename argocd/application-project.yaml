@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: application-project
+  namespace: argocd
+spec:
+  description: Project for blog application workloads
+
+  sourceRepos:
+    - https://github.com/CharanSai8127/Fullstack-blogging
+
+  destinations:
+    - namespace: blog-prod
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  orphanedResources:
+    warn: true

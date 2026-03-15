@@ -4,10 +4,10 @@ kind: Deployment
 metadata:
   name: mysqld-exporter
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
-  strategy:
-    type: RollingUpdate
   selector:
     matchLabels:
       app: mysqld-exporter
@@ -21,9 +21,6 @@ spec:
         - name: mysqld-exporter
           image: prom/mysqld-exporter:v0.15.1
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
 
           env:
             - name: DATA_SOURCE_NAME
@@ -64,6 +61,8 @@ kind: Service
 metadata:
   name: mysqld-exporter
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   selector:
     app: mysqld-exporter

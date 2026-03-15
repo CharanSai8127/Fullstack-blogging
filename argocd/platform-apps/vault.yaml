@@ -3,8 +3,10 @@ kind: Application
 metadata:
   name: vault
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
-  project: default
+  project: platform-project
 
   source:
     repoURL: https://helm.releases.hashicorp.com
@@ -12,7 +14,7 @@ spec:
     targetRevision: 0.29.0
     helm:
       valueFiles:
-        - vault-values-raft.yaml
+        - ../values/vault-values-raft.yaml
 
   destination:
     server: https://kubernetes.default.svc

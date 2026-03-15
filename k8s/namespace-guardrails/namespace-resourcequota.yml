@@ -2,7 +2,9 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: blog-quota
-  namespace: default
+  namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
 spec:
   hard:
     pods: "15"

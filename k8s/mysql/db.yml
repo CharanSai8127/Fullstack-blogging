@@ -4,6 +4,8 @@ kind: Service
 metadata:
   name: mysql-headless
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   clusterIP: None
   selector:
@@ -17,6 +19,8 @@ kind: Service
 metadata:
   name: mysql
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   selector:
     app: mysql
@@ -30,6 +34,8 @@ kind: StatefulSet
 metadata:
   name: mysql
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   serviceName: mysql-headless
   replicas: 1
@@ -59,41 +65,19 @@ spec:
       containers:
         - name: mysql
           image: mysql:8.0.36
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            runAsUser: 0
-            allowPrivilegeEscalation: false
-          command: ["/bin/sh", "-c"]
+          command: ["/bin/sh","-c"]
           args:
             - source /vault/secrets/db && exec docker-entrypoint.sh mysqld
           ports:
             - containerPort: 3306
-              name: mysql
-          resources:
-            requests:
-              cpu: "500m"
-              memory: "1Gi"
-            limits:
-              cpu: "1"
-              memory: "2Gi"
           readinessProbe:
             exec:
-              command:
-                - mysqladmin
-                - ping
-                - -h
-                - 127.0.0.1
+              command: ["mysqladmin","ping","-h","127.0.0.1"]
             initialDelaySeconds: 20
-            periodSeconds: 10
           livenessProbe:
             exec:
-              command:
-                - mysqladmin
-                - ping
-                - -h
-                - 127.0.0.1
+              command: ["mysqladmin","ping","-h","127.0.0.1"]
             initialDelaySeconds: 60
-            periodSeconds: 20
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql
@@ -101,8 +85,7 @@ spec:
     - metadata:
         name: mysql-persistent-storage
       spec:
-        accessModes:
-          - ReadWriteOnce
+        accessModes: ["ReadWriteOnce"]
         storageClassName: mysql-sc
         resources:
           requests:

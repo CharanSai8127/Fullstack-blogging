@@ -3,8 +3,10 @@ kind: Application
 metadata:
   name: ebs-csi-driver
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
 spec:
-  project: default
+  project: platform-project
 
   source:
     repoURL: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
@@ -12,7 +14,7 @@ spec:
     targetRevision: 2.30.0
     helm:
       valueFiles:
-        - ebs-csi-values.yaml
+        - ../values/ebs-csi-values.yaml
 
   destination:
     server: https://kubernetes.default.svc

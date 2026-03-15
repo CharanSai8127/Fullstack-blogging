@@ -3,8 +3,10 @@ kind: Application
 metadata:
   name: kube-prometheus-stack
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
-  project: default
+  project: platform-project
 
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
@@ -12,7 +14,7 @@ spec:
     targetRevision: 55.5.0
     helm:
       valueFiles:
-        - monitoring-values.yaml
+        - ../values/monitoring-values.yaml
 
   destination:
     server: https://kubernetes.default.svc
