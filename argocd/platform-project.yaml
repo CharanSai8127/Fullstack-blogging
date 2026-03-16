@@ -4,10 +4,15 @@ metadata:
   name: platform-project
   namespace: argocd
 spec:
-  description: Platform components project
+  description: Project for platform and operational components
 
   sourceRepos:
-  - '*'
+  - https://github.com/CharanSai8127/Fullstack-blogging
+  - https://charts.jetstack.io
+  - https://helm.nginx.com/stable
+  - https://prometheus-community.github.io/helm-charts
+  - https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+  - https://helm.releases.hashicorp.com
 
   destinations:
   - namespace: argocd
@@ -24,5 +29,12 @@ spec:
     server: https://kubernetes.default.svc
 
   clusterResourceWhitelist:
-  - group: '*'
-    kind: '*'
+  - group: "*"
+    kind: "*"
+
+  namespaceResourceWhitelist:
+  - group: "*"
+    kind: "*"
+
+  orphanedResources:
+    warn: true
