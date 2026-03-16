@@ -14,7 +14,7 @@ spec:
     targetRevision: 0.29.0
     helm:
       valueFiles:
-        - ../values/vault-values-raft.yaml
+        - vault-values-raft.yaml
 
   destination:
     server: https://kubernetes.default.svc

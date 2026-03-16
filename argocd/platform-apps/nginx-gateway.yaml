@@ -14,7 +14,7 @@ spec:
     targetRevision: 1.3.0
     helm:
       valueFiles:
-        - ../values/nginx-gateway-values.yaml
+        - nginx-gateway-values.yaml
 
   destination:
     server: https://kubernetes.default.svc
