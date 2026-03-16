@@ -16,8 +16,33 @@ spec:
       parameters:
         - name: installCRDs
           value: "true"
-      valueFiles:
-        - cert-manager-values.yaml
+      values: |
+        nodeSelector:
+          role: platform
+
+        tolerations:
+          - key: platform
+            operator: Equal
+            value: "true"
+            effect: NoSchedule
+
+        webhook:
+          nodeSelector:
+            role: platform
+          tolerations:
+            - key: platform
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+
+        cainjector:
+          nodeSelector:
+            role: platform
+          tolerations:
+            - key: platform
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
 
   destination:
     server: https://kubernetes.default.svc
