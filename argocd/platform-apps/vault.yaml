@@ -53,7 +53,7 @@ spec:
 
                 seal "awskms" {
                   region     = "ap-south-1"
-                  kms_key_id = ""
+                  kms_key_id = "arn:aws:kms:ap-south-1:041875151232:key/0d3ad2fb-cdeb-4075-8973-d4f1dacaf6a1"
                 }
 
                 storage "raft" {
