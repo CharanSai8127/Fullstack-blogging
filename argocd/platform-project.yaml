@@ -13,6 +13,7 @@ spec:
   - https://prometheus-community.github.io/helm-charts
   - https://kubernetes-sigs.github.io/aws-ebs-csi-driver
   - https://helm.releases.hashicorp.com
+  - https://github.com/nginx/nginx-gateway-fabric
 
   destinations:
   - namespace: argocd
