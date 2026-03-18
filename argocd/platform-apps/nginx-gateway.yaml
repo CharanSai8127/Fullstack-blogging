@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/CharanSai8127/Fullstack-blogging
     targetRevision: main
-    path: argocd/nginx-gateway/overlays/prod
+    path: argocd/platform-apps/nginx-gateway/overlays/prod
 
   destination:
     server: https://kubernetes.default.svc
