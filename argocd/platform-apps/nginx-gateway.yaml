@@ -14,9 +14,6 @@ spec:
     targetRevision: v1.6.1
     path: deploy/nodeport
 
-    directory:
-      recurse: true
-
     kustomize:
       patches:
         - target:
