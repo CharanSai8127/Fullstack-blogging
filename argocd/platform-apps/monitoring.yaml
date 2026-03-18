@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+
 spec:
   project: platform-project
 
@@ -16,6 +17,7 @@ spec:
       values: |
         crds:
           enabled: false
+
         prometheus:
           prometheusSpec:
             nodeSelector:
@@ -62,6 +64,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-
-  syncOptions:
-    - CreateNamespace=true
+    syncOptions:                #  FIXED (moved inside)
+      - CreateNamespace=true
