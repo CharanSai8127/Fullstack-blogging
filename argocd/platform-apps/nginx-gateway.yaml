@@ -10,27 +10,9 @@ spec:
   project: platform-project
 
   source:
-    repoURL: https://github.com/nginx/nginx-gateway-fabric
-    targetRevision: v1.6.1
-    path: deploy/nodeport
-
-    kustomize:
-      patches:
-        - target:
-            kind: Deployment
-            name: nginx-gateway
-          patch: |
-            - op: add
-              path: /spec/template/spec/nodeSelector
-              value:
-                role: platform
-            - op: add
-              path: /spec/template/spec/tolerations
-              value:
-                - key: "platform"
-                  operator: "Equal"
-                  value: "true"
-                  effect: "NoSchedule"
+    repoURL: https://github.com/CharanSai8127/Fullstack-blogging
+    targetRevision: main
+    path: argocd/nginx-gateway/overlays/prod
 
   destination:
     server: https://kubernetes.default.svc
