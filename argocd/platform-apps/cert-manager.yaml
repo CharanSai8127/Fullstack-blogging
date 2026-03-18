@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-4"
+
 spec:
   project: platform-project
 
@@ -13,10 +14,15 @@ spec:
     chart: cert-manager
     targetRevision: v1.14.4
     helm:
+<<<<<<< HEAD
       parameters:
         - name: installCRDs
           value: "false"
+=======
+>>>>>>> f9bbec7a58f73e9b2d961c7b66d86f07af115674
       values: |
+        installCRDs: false
+
         nodeSelector:
           role: platform
 

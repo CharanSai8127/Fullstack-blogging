@@ -4,7 +4,7 @@ metadata:
   name: nginx-gateway
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   project: platform-project
 
@@ -13,15 +13,19 @@ spec:
     targetRevision: v1.6.1
     path: deploy/nodeport
 
+<<<<<<< HEAD
     directory:
       recurse: true
 
+=======
+>>>>>>> f9bbec7a58f73e9b2d961c7b66d86f07af115674
     kustomize:
       patches:
         - target:
             kind: Deployment
             name: nginx-gateway
           patch: |
+<<<<<<< HEAD
             apiVersion: apps/v1
             kind: Deployment
             metadata:
@@ -36,6 +40,19 @@ spec:
                       operator: "Equal"
                       value: "true"
                       effect: "NoSchedule"
+=======
+            - op: add
+              path: /spec/template/spec/nodeSelector
+              value:
+                role: platform
+            - op: add
+              path: /spec/template/spec/tolerations
+              value:
+                - key: "platform"
+                  operator: "Equal"
+                  value: "true"
+                  effect: "NoSchedule"
+>>>>>>> f9bbec7a58f73e9b2d961c7b66d86f07af115674
 
   destination:
     server: https://kubernetes.default.svc
