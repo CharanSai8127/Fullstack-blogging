@@ -9,22 +9,33 @@ spec:
   project: platform-project
 
   source:
-    repoURL: https://helm.nginx.com/stable
-    chart: nginx-gateway-fabric
-    targetRevision: 1.2.0
-    helm:
-      values: |
-        service:
-          type: LoadBalancer
+    repoURL: https://github.com/nginx/nginx-gateway-fabric
+    targetRevision: v1.6.1
+    path: deploy/nodeport
 
-        nodeSelector:
-          role: platform
+    directory:
+      recurse: true
 
-        tolerations:
-          - key: platform
-            operator: Equal
-            value: "true"
-            effect: NoSchedule
+    kustomize:
+      patches:
+        - target:
+            kind: Deployment
+            name: nginx-gateway
+          patch: |
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-gateway
+            spec:
+              template:
+                spec:
+                  nodeSelector:
+                    role: platform
+                  tolerations:
+                    - key: "platform"
+                      operator: "Equal"
+                      value: "true"
+                      effect: "NoSchedule"
 
   destination:
     server: https://kubernetes.default.svc
@@ -34,6 +45,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-
-  syncOptions:
-    - CreateNamespace=true
+    syncOptions:
+      - CreateNamespace=true

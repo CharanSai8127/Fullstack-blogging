@@ -5,8 +5,16 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
+
 spec:
   project: platform-project
+
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: vault-agent-injector-cfg
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
 
   source:
     repoURL: https://helm.releases.hashicorp.com
@@ -53,7 +61,7 @@ spec:
 
                 seal "awskms" {
                   region     = "ap-south-1"
-                  kms_key_id = ""
+                  kms_key_id = "arn:aws:kms:ap-south-1:041875151232:key/1ea61afa-057f-4cbf-a498-0da74c74ada9"
                 }
 
                 storage "raft" {
