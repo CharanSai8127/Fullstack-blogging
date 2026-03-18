@@ -14,12 +14,6 @@ spec:
     chart: cert-manager
     targetRevision: v1.14.4
     helm:
-<<<<<<< HEAD
-      parameters:
-        - name: installCRDs
-          value: "false"
-=======
->>>>>>> f9bbec7a58f73e9b2d961c7b66d86f07af115674
       values: |
         installCRDs: false
 
@@ -59,5 +53,5 @@ spec:
       prune: true
       selfHeal: true
 
-  syncOptions:
-    - CreateNamespace=true
+    syncOptions:
+      - CreateNamespace=true
