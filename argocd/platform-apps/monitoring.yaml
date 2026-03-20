@@ -39,7 +39,7 @@ spec:
             storageSpec:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: gp3
+                  storageClassName: vault-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
@@ -58,7 +58,7 @@ spec:
             storage:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: gp3
+                  storageClassName: vault-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
