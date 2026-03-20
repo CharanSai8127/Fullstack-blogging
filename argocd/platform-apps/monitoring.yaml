@@ -36,6 +36,15 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 2Gi
 
         alertmanager:
           alertmanagerSpec:
@@ -46,6 +55,15 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 2Gi
 
         grafana:
           nodeSelector:
