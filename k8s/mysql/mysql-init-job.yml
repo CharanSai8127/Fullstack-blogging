@@ -4,9 +4,7 @@ metadata:
   name: mysql-migration-job
   namespace: blog-prod
   annotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-1"   # ✅ ONLY this (NO PreSync)
 spec:
   backoffLimit: 3
   template:
@@ -15,7 +13,7 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "mysql-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/db"   # ✅ FIXED
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
@@ -32,57 +30,25 @@ spec:
           command: ["/bin/sh","-c"]
           args:
             - |
-              echo "Loading Vault secrets..."
               source /vault/secrets/db
 
-              echo "Waiting for MySQL to become ready..."
+              echo "Waiting for MySQL..."
 
               for i in $(seq 1 60); do
                 mysql -h mysql.blog-prod.svc.cluster.local \
                       -u root \
                       -p"$MYSQL_ROOT_PASSWORD" \
                       -e "SELECT 1" && break
-                echo "MySQL not ready yet... retrying"
                 sleep 5
               done
 
-              echo "Running database migrations..."
+              echo "Running migrations..."
 
               mysql -h mysql.blog-prod.svc.cluster.local \
                     -u root \
                     -p"$MYSQL_ROOT_PASSWORD" <<EOF
-
               CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
-
               CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
               GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
-
-              CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
-              GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
-
-              USE $MYSQL_DATABASE;
-
-              CREATE TABLE IF NOT EXISTS schema_migrations (
-                version VARCHAR(50) PRIMARY KEY,
-                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-              );
-
-              CREATE TABLE IF NOT EXISTS user (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255),
-                password VARCHAR(255)
-              );
-
-              CREATE TABLE IF NOT EXISTS post (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                content TEXT,
-                user_id BIGINT
-              );
-
-              INSERT IGNORE INTO schema_migrations(version)
-              VALUES ('001_initial_schema');
-
               FLUSH PRIVILEGES;
               EOF
-
-              echo "Database migration completed successfully."

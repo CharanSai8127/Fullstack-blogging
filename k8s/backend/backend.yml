@@ -40,7 +40,7 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "db-backend-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/db"   # ✅ FIXED
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
