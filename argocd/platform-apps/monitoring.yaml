@@ -18,8 +18,27 @@ spec:
         crds:
           enabled: false
 
+        global:
+          nodeSelector:
+            role: platform
+          tolerations:
+            - key: platform
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+
         prometheus:
           prometheusSpec:
+            nodeSelector:
+              role: platform
+            tolerations:
+              - key: platform
+                operator: Equal
+                value: "true"
+                effect: NoSchedule
+
+        alertmanager:
+          alertmanagerSpec:
             nodeSelector:
               role: platform
             tolerations:
@@ -37,16 +56,6 @@ spec:
               value: "true"
               effect: NoSchedule
 
-        alertmanager:
-          alertmanagerSpec:
-            nodeSelector:
-              role: platform
-            tolerations:
-              - key: platform
-                operator: Equal
-                value: "true"
-                effect: NoSchedule
-
         kube-state-metrics:
           nodeSelector:
             role: platform
@@ -56,6 +65,19 @@ spec:
               value: "true"
               effect: NoSchedule
 
+        prometheusOperator:
+          nodeSelector:
+            role: platform
+          tolerations:
+            - key: platform
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+
+        nodeExporter:
+          tolerations:
+            - operator: Exists
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -64,5 +86,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:                #  FIXED (moved inside)
+    syncOptions:
       - CreateNamespace=true
