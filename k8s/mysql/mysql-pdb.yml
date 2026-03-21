@@ -3,8 +3,11 @@ kind: PodDisruptionBudget
 metadata:
   name: mysql-pdb
   namespace: blog-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # 👈 ADDED
 spec:
   minAvailable: 1
   selector:
     matchLabels:
       app: mysql
+

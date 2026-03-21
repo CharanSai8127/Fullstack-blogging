@@ -4,7 +4,9 @@ metadata:
   name: mysql-migration-job
   namespace: blog-prod
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"   # ✅ ONLY this (NO PreSync)
+    argocd.argoproj.io/hook: PreSync                # 👈 ADDED
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded  # 👈 ADDED
+    argocd.argoproj.io/sync-wave: "-1"              # ✅ KEPT
 spec:
   backoffLimit: 3
   template:
@@ -13,7 +15,7 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "mysql-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/db"   # ✅ FIXED
+        vault.hashicorp.com/agent-inject-secret-db: "secret/db"
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
@@ -23,6 +25,8 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysql
+      nodeSelector:          # 👈 ADDED
+        role: workload
       restartPolicy: OnFailure
       containers:
         - name: mysql-migration
@@ -52,3 +56,4 @@ spec:
               GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
               FLUSH PRIVILEGES;
               EOF
+

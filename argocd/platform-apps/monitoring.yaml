@@ -1,3 +1,4 @@
+# argocd/platform-apps/kube-prometheus-stack.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -27,6 +28,7 @@ spec:
               value: "true"
               effect: NoSchedule
 
+        # ---- Prometheus ----
         prometheus:
           prometheusSpec:
             nodeSelector:
@@ -39,13 +41,14 @@ spec:
             storageSpec:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: vault-storage
+                  storageClassName: monitoring-storage  # <-- CHANGED from vault-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
                     requests:
                       storage: 2Gi
 
+        # ---- Alertmanager ----
         alertmanager:
           alertmanagerSpec:
             nodeSelector:
@@ -58,13 +61,14 @@ spec:
             storage:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: vault-storage
+                  storageClassName: monitoring-storage  # <-- CHANGED from vault-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
                     requests:
                       storage: 2Gi
 
+        # ---- Grafana ----
         grafana:
           nodeSelector:
             role: platform
@@ -73,7 +77,13 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
+          # Optional: if you want Grafana persistence too
+          persistence:
+            enabled: true
+            storageClassName: monitoring-storage
+            size: 5Gi
 
+        # ---- Kube-State-Metrics ----
         kube-state-metrics:
           nodeSelector:
             role: platform
@@ -83,6 +93,7 @@ spec:
               value: "true"
               effect: NoSchedule
 
+        # ---- Prometheus Operator ----
         prometheusOperator:
           nodeSelector:
             role: platform
@@ -92,9 +103,10 @@ spec:
               value: "true"
               effect: NoSchedule
 
+        # ---- Node Exporter ----
         nodeExporter:
           tolerations:
-            - operator: Exists
+            - operator: Exists  # Run on all nodes, including tainted ones
 
   destination:
     server: https://kubernetes.default.svc
@@ -106,3 +118,4 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+
