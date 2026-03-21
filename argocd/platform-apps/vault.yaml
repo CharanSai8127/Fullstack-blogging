@@ -42,7 +42,7 @@ spec:
 
           ha:
             enabled: true
-            replicas: 2
+            replicas: 3
 
             raft:
               enabled: true
@@ -61,7 +61,7 @@ spec:
 
                 seal "awskms" {
                   region     = "ap-south-1"
-                  kms_key_id = "arn:aws:kms:ap-south-1:041875151232:key/afe94787-40f7-4753-8468-a44c72a3492a"
+                  kms_key_id = "arn:aws:kms:ap-south-1:041875151232:key/81686e72-ae18-4683-be37-c2c0c1554418"
                 }
 
                 storage "raft" {
