@@ -1,0 +1,27 @@
+# argocd/platform-apps/storage-classes-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage-classes
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-6"  # Before ebs-csi is "in use"
+spec:
+  project: platform-project
+
+  source:
+    repoURL: https://github.com/CharanSai8127/Fullstack-blogging
+    targetRevision: main
+    path: argocd/platform-apps/storage-classes
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system  # StorageClasses are cluster-scoped; namespace ignored
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
