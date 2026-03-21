@@ -4,9 +4,15 @@ metadata:
   name: mysql-migration-job
   namespace: blog-prod
   annotations:
-    argocd.argoproj.io/hook: PreSync                # 👈 ADDED
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded  # 👈 ADDED
-    argocd.argoproj.io/sync-wave: "-1"              # ✅ KEPT
+    # ✅ CHANGE 1: Use "Sync" phase, NOT "PreSync"
+    argocd.argoproj.io/hook: Sync               
+    
+    # ✅ CHANGE 2: Delete immediately after success
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded  
+    
+    # ✅ CHANGE 3: Wave "1" runs AFTER wave "-2" (StatefulSet)
+    argocd.argoproj.io/sync-wave: "1"             
+
 spec:
   backoffLimit: 3
   template:
@@ -25,24 +31,29 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysql
-      nodeSelector:          # 👈 ADDED
+      nodeSelector:
         role: workload
       restartPolicy: OnFailure
       containers:
         - name: mysql-migration
           image: mysql:8.0.36
-          command: ["/bin/sh","-c"]
+          command: ["/bin/sh", "-c"]
           args:
             - |
               source /vault/secrets/db
 
-              echo "Waiting for MySQL..."
+              echo "Waiting for MySQL to be ready..."
 
+              # Retry loop: Wait up to 5 minutes for MySQL
               for i in $(seq 1 60); do
-                mysql -h mysql.blog-prod.svc.cluster.local \
+                if mysql -h mysql.blog-prod.svc.cluster.local \
                       -u root \
                       -p"$MYSQL_ROOT_PASSWORD" \
-                      -e "SELECT 1" && break
+                      -e "SELECT 1" > /dev/null 2>&1; then
+                  echo "MySQL is ready!"
+                  break
+                fi
+                echo "Waiting for MySQL... attempt $i/60"
                 sleep 5
               done
 
@@ -56,4 +67,6 @@ spec:
               GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
               FLUSH PRIVILEGES;
               EOF
+
+              echo "Migration completed successfully."
 
