@@ -1,4 +1,3 @@
-# argocd/platform-apps/kube-prometheus-stack.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -28,9 +27,12 @@ spec:
               value: "true"
               effect: NoSchedule
 
-        # ---- Prometheus ----
+        # ---------------- PROMETHEUS ----------------
         prometheus:
           prometheusSpec:
+            replicas: 1
+            shards: 1
+
             nodeSelector:
               role: platform
             tolerations:
@@ -38,19 +40,35 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
+
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: kubernetes.io/hostname
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: prometheus
+
             storageSpec:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: monitoring-storage  # <-- CHANGED from vault-storage
+                  storageClassName: monitoring-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
                     requests:
                       storage: 2Gi
 
-        # ---- Alertmanager ----
+        # ---------------- ALERTMANAGER ----------------
         alertmanager:
           alertmanagerSpec:
+            replicas: 1
+
             nodeSelector:
               role: platform
             tolerations:
@@ -58,17 +76,31 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
+
+            resources:
+              requests:
+                cpu: 200m
+                memory: 512Mi
+
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: kubernetes.io/hostname
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: alertmanager
+
             storage:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: monitoring-storage  # <-- CHANGED from vault-storage
+                  storageClassName: monitoring-storage
                   accessModes:
                     - ReadWriteOnce
                   resources:
                     requests:
                       storage: 2Gi
 
-        # ---- Grafana ----
+        # ---------------- GRAFANA ----------------
         grafana:
           nodeSelector:
             role: platform
@@ -77,13 +109,18 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
-          # Optional: if you want Grafana persistence too
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+
           persistence:
             enabled: true
             storageClassName: monitoring-storage
             size: 5Gi
 
-        # ---- Kube-State-Metrics ----
+        # ---------------- KUBE-STATE-METRICS ----------------
         kube-state-metrics:
           nodeSelector:
             role: platform
@@ -93,7 +130,7 @@ spec:
               value: "true"
               effect: NoSchedule
 
-        # ---- Prometheus Operator ----
+        # ---------------- PROMETHEUS OPERATOR ----------------
         prometheusOperator:
           nodeSelector:
             role: platform
@@ -103,10 +140,10 @@ spec:
               value: "true"
               effect: NoSchedule
 
-        # ---- Node Exporter ----
+        # ---------------- NODE EXPORTER ----------------
         nodeExporter:
           tolerations:
-            - operator: Exists  # Run on all nodes, including tainted ones
+            - operator: Exists
 
   destination:
     server: https://kubernetes.default.svc
@@ -118,4 +155,3 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-
