@@ -68,7 +68,7 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-mysql
-      nodeSelector:          # 👈 ADDED: Forces scheduling on workload nodes
+      nodeSelector:
         role: workload
       containers:
         - name: mysql
@@ -111,8 +111,7 @@ spec:
         name: mysql-persistent-storage
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: mysql-sc
+        storageClassName: mysql-storage   # FIXED HERE
         resources:
           requests:
             storage: 2Gi
-
