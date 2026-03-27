@@ -7,10 +7,10 @@ metadata:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
     argocd.argoproj.io/sync-wave: "1"
-    argocd.argoproj.io/sync-options: Replace=true   # ✅ FIX for immutable error
 
 spec:
   backoffLimit: 3
+
   template:
     metadata:
       annotations:
@@ -66,7 +66,6 @@ spec:
                     -p"$MYSQL_ROOT_PASSWORD" <<EOF
 
               CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
-
               USE $MYSQL_DATABASE;
 
               CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
@@ -80,24 +79,6 @@ spec:
                 user_id BIGINT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
               );
-
-              -- Safe column check (no crash)
-              SET @col_exists = (
-                SELECT COUNT(*) 
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'post'
-                  AND COLUMN_NAME = 'user_id'
-              );
-
-              SET @sql = IF(@col_exists = 0,
-                'ALTER TABLE post ADD COLUMN user_id BIGINT;',
-                'SELECT "Column exists";'
-              );
-
-              PREPARE stmt FROM @sql;
-              EXECUTE stmt;
-              DEALLOCATE PREPARE stmt;
 
               EOF
 
