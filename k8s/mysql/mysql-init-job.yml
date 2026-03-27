@@ -74,7 +74,7 @@ spec:
               GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
               FLUSH PRIVILEGES;
 
-              -- Create table (first-time setup)
+              -- Create table
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255),
@@ -83,8 +83,23 @@ spec:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
               );
 
-              -- Ensure schema stays correct (important for re-runs)
-              ALTER TABLE post ADD COLUMN IF NOT EXISTS user_id BIGINT;
+              -- Safe column addition (idempotent)
+              SET @col_exists = (
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'post'
+                  AND COLUMN_NAME = 'user_id'
+              );
+
+              SET @sql = IF(@col_exists = 0,
+                'ALTER TABLE post ADD COLUMN user_id BIGINT;',
+                'SELECT "Column exists";'
+              );
+
+              PREPARE stmt FROM @sql;
+              EXECUTE stmt;
+              DEALLOCATE PREPARE stmt;
 
               EOF
 
