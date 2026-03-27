@@ -63,20 +63,29 @@ spec:
               mysql -h "$MYSQL_HOST" \
                     -u root \
                     -p"$MYSQL_ROOT_PASSWORD" <<EOF
+
+              -- Create DB
               CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
 
               USE $MYSQL_DATABASE;
 
+              -- Create user
               CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
               GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
               FLUSH PRIVILEGES;
 
+              -- Create table (first-time setup)
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255),
                 content TEXT,
+                user_id BIGINT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
               );
+
+              -- Ensure schema stays correct (important for re-runs)
+              ALTER TABLE post ADD COLUMN IF NOT EXISTS user_id BIGINT;
+
               EOF
 
               echo "Migration completed successfully."
