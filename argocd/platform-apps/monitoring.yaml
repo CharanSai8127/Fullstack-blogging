@@ -5,10 +5,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
-
 spec:
   project: platform-project
-
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
@@ -17,7 +15,6 @@ spec:
       values: |
         crds:
           enabled: false
-
         global:
           nodeSelector:
             role: platform
@@ -26,13 +23,10 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
-
-        # ---------------- PROMETHEUS ----------------
         prometheus:
           prometheusSpec:
             replicas: 1
             shards: 1
-
             nodeSelector:
               role: platform
             tolerations:
@@ -40,12 +34,10 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
-
             resources:
               requests:
-                cpu: 500m
-                memory: 1Gi
-
+                cpu: 200m
+                memory: 512Mi
             topologySpreadConstraints:
               - maxSkew: 1
                 topologyKey: kubernetes.io/hostname
@@ -53,7 +45,6 @@ spec:
                 labelSelector:
                   matchLabels:
                     app.kubernetes.io/name: prometheus
-
             storageSpec:
               volumeClaimTemplate:
                 spec:
@@ -63,12 +54,9 @@ spec:
                   resources:
                     requests:
                       storage: 2Gi
-
-        # ---------------- ALERTMANAGER ----------------
         alertmanager:
           alertmanagerSpec:
             replicas: 1
-
             nodeSelector:
               role: platform
             tolerations:
@@ -76,12 +64,10 @@ spec:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
-
             resources:
               requests:
-                cpu: 200m
-                memory: 512Mi
-
+                cpu: 100m
+                memory: 256Mi
             topologySpreadConstraints:
               - maxSkew: 1
                 topologyKey: kubernetes.io/hostname
@@ -89,7 +75,6 @@ spec:
                 labelSelector:
                   matchLabels:
                     app.kubernetes.io/name: alertmanager
-
             storage:
               volumeClaimTemplate:
                 spec:
@@ -99,8 +84,6 @@ spec:
                   resources:
                     requests:
                       storage: 2Gi
-
-        # ---------------- GRAFANA ----------------
         grafana:
           nodeSelector:
             role: platform
@@ -109,18 +92,14 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
-
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
-
+              cpu: 100m
+              memory: 256Mi
           persistence:
             enabled: true
             storageClassName: monitoring-storage
             size: 5Gi
-
-        # ---------------- KUBE-STATE-METRICS ----------------
         kube-state-metrics:
           nodeSelector:
             role: platform
@@ -129,8 +108,6 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
-
-        # ---------------- PROMETHEUS OPERATOR ----------------
         prometheusOperator:
           nodeSelector:
             role: platform
@@ -139,16 +116,12 @@ spec:
               operator: Equal
               value: "true"
               effect: NoSchedule
-
-        # ---------------- NODE EXPORTER ----------------
         nodeExporter:
           tolerations:
             - operator: Exists
-
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
-
   syncPolicy:
     automated:
       prune: true
