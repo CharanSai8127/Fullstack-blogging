@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
-    argocd.argoproj.io/sync-wave: "2"  # After MySQL
+    argocd.argoproj.io/sync-wave: "-1"   # MUST run before backend
 
 spec:
   backoffLimit: 3
@@ -41,37 +41,38 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              set -e
-              # No -u until secrets loaded
+              set -euo pipefail
 
               echo "=== Loading Vault secrets ==="
               source /vault/secrets/db
-              set -u  # Now safe
 
-              echo "Secrets: DB=$MYSQL_DATABASE Host=$MYSQL_HOST"
-
-              echo "=== Waiting MySQL (150s) ==="
+              echo "=== Waiting for MySQL ==="
               for i in $(seq 1 30); do
                 if mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                          -u root -p"$MYSQL_ROOT_PASSWORD" \
                          -e "SELECT 1" >/dev/null 2>&1; then
-                  echo "✓ MySQL ready"
+                  echo "✓ MySQL is ready"
                   break
                 fi
                 echo "Waiting... ($i/30)"
                 sleep 5
-              done || exit 1
+              done
 
-              echo "=== SAFE Migration ==="
+              echo "=== Running Migration ==="
+
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-                    -u root -p"$MYSQL_ROOT_PASSWORD" <<'EOSQL'
-              CREATE DATABASE IF NOT EXISTS `${MYSQL_DATABASE}`;
-              USE `${MYSQL_DATABASE}`;
+                    -u root -p"$MYSQL_ROOT_PASSWORD" <<EOSQL
 
-              CREATE USER IF NOT EXISTS `'${MYSQL_USER}'`@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
-              GRANT ALL PRIVILEGES ON `${MYSQL_DATABASE}`.* TO `'${MYSQL_USER}'`@'%';
+              -- Create DB safely
+              CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+              USE \`${MYSQL_DATABASE}\`;
+
+              -- Create user correctly
+              CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
               FLUSH PRIVILEGES;
 
+              -- Create table if not exists
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255) NOT NULL,
@@ -80,24 +81,38 @@ spec:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
               );
 
+              -- Add column ONLY if missing
               SET @col_exists = (
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = '${MYSQL_DATABASE}'
-                  AND TABLE_NAME = 'post' AND COLUMN_NAME = 'user_id'
+                  AND TABLE_NAME = 'post'
+                  AND COLUMN_NAME = 'user_id'
               );
 
               SET @sql = IF(@col_exists = 0,
                 'ALTER TABLE post ADD COLUMN user_id BIGINT NOT NULL DEFAULT 0',
-                'SELECT "user_id exists"'
+                'SELECT "user_id already exists"'
               );
 
-              PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+              PREPARE stmt FROM @sql;
+              EXECUTE stmt;
+              DEALLOCATE PREPARE stmt;
 
-              DESCRIBE post;
               EOSQL
 
-              echo "✓ Migration done"
+              echo "=== Verifying schema ==="
+
+              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                    -u root -p"$MYSQL_ROOT_PASSWORD" \
+                    -D "$MYSQL_DATABASE" \
+                    -e "DESCRIBE post;" || { echo "❌ Table verification failed"; exit 1; }
+
+              echo "=== Verifying app user ==="
+
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
                     -D "$MYSQL_DATABASE" \
-                    -e "SELECT 'Backend ready' as status;"
+                    -e "SELECT 1;" || { echo "❌ App user connection failed"; exit 1; }
+
+              echo "✅ Migration completed successfully"
