@@ -39,6 +39,7 @@ spec:
         app: app-green
       annotations:
         vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "db-backend-role"
         vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
         vault.hashicorp.com/agent-inject-template-db: |
@@ -61,12 +62,13 @@ spec:
         - name: app
           image: charansait372/devops-blog-new:1.6
           imagePullPolicy: IfNotPresent
+
           command: ["sh","-c"]
           args:
             - |
-              set -e
+              set -euo pipefail
 
-              echo "=== Loading secrets ==="
+              echo "=== Loading Vault secrets ==="
               source /vault/secrets/db
 
               echo "=== Waiting for MySQL ==="
@@ -75,8 +77,12 @@ spec:
                 sleep 3
               done
 
-              echo "=== Starting application ==="
-              exec java -jar /usr/src/app/app.jar
+              echo "=== Starting application with DB config ==="
+              exec java \
+                -Dspring.datasource.url=jdbc:mysql://$MYSQL_HOST:$MYSQL_PORT/$MYSQL_DATABASE \
+                -Dspring.datasource.username=$MYSQL_USER \
+                -Dspring.datasource.password=$MYSQL_PASSWORD \
+                -jar /usr/src/app/app.jar
 
           ports:
             - containerPort: 8080
@@ -87,9 +93,9 @@ spec:
               memory: "512Mi"
             limits:
               cpu: "500m"
-              memory: "1Gi"
+              memory: "1.5Gi"
 
-          # ✅ Prevent early restarts during startup
+          #  Prevent premature restarts during boot
           startupProbe:
             httpGet:
               path: /
@@ -97,7 +103,7 @@ spec:
             failureThreshold: 30
             periodSeconds: 5
 
-          # ✅ Only mark ready when app is actually serving
+          # Only route traffic when app is ready
           readinessProbe:
             httpGet:
               path: /
@@ -106,7 +112,7 @@ spec:
             periodSeconds: 10
             failureThreshold: 6
 
-          # ✅ Restart only if app becomes unhealthy later
+          #  Restart only if app becomes unhealthy later
           livenessProbe:
             httpGet:
               path: /
