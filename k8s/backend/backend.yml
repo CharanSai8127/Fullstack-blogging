@@ -40,7 +40,7 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "db-backend-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
@@ -50,11 +50,13 @@ spec:
           export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
           export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           {{- end }}
+
     spec:
       serviceAccountName: vault-app-green
       terminationGracePeriodSeconds: 30
       nodeSelector:
         role: workload
+
       containers:
         - name: app
           image: charansait372/devops-blog-new:1.6
@@ -63,7 +65,17 @@ spec:
           args:
             - |
               set -e
+
+              echo "=== Loading secrets ==="
               source /vault/secrets/db
+
+              echo "=== Waiting for MySQL ==="
+              until nc -z $MYSQL_HOST $MYSQL_PORT; do
+                echo "Waiting for DB..."
+                sleep 3
+              done
+
+              echo "=== Starting application ==="
               exec java -jar /usr/src/app/app.jar
 
           ports:
@@ -77,16 +89,28 @@ spec:
               cpu: "500m"
               memory: "1Gi"
 
+          # ✅ Prevent early restarts during startup
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 5
+
+          # ✅ Only mark ready when app is actually serving
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 10
             periodSeconds: 10
+            failureThreshold: 6
 
+          # ✅ Restart only if app becomes unhealthy later
           livenessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 40
+            initialDelaySeconds: 60
             periodSeconds: 20
+            failureThreshold: 3
