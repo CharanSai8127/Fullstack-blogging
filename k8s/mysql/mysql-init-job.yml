@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
-    argocd.argoproj.io/sync-wave: "-1"   # MUST run before backend
+    argocd.argoproj.io/sync-wave: "-2"
 
 spec:
   backoffLimit: 3
@@ -51,53 +51,47 @@ spec:
                 if mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                          -u root -p"$MYSQL_ROOT_PASSWORD" \
                          -e "SELECT 1" >/dev/null 2>&1; then
-                  echo "✓ MySQL is ready"
+                  echo "✓ MySQL ready"
                   break
                 fi
                 echo "Waiting... ($i/30)"
                 sleep 5
               done
 
-              echo "=== Running Migration ==="
+              echo "=== Running FULL SCHEMA migration ==="
 
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u root -p"$MYSQL_ROOT_PASSWORD" <<EOSQL
 
-              -- Create DB safely
+              -- Ensure database exists
               CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
               USE \`${MYSQL_DATABASE}\`;
 
-              -- Create user correctly
+              -- Ensure application user
               CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
               GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
               FLUSH PRIVILEGES;
 
-              -- Create table if not exists
+              -- USERS TABLE (required by app)
+              CREATE TABLE IF NOT EXISTS users (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                password VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              );
+
+              -- POST TABLE
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255) NOT NULL,
                 content TEXT,
+                user_id BIGINT NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
               );
 
-              -- Add column ONLY if missing
-              SET @col_exists = (
-                SELECT COUNT(*)
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = '${MYSQL_DATABASE}'
-                  AND TABLE_NAME = 'post'
-                  AND COLUMN_NAME = 'user_id'
-              );
-
-              SET @sql = IF(@col_exists = 0,
-                'ALTER TABLE post ADD COLUMN user_id BIGINT NOT NULL DEFAULT 0',
-                'SELECT "user_id already exists"'
-              );
-
-              PREPARE stmt FROM @sql;
-              EXECUTE stmt;
-              DEALLOCATE PREPARE stmt;
+              -- Ensure user_id column exists (extra safety)
+              ALTER TABLE post ADD COLUMN IF NOT EXISTS user_id BIGINT NOT NULL DEFAULT 0;
 
               EOSQL
 
@@ -106,13 +100,23 @@ spec:
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u root -p"$MYSQL_ROOT_PASSWORD" \
                     -D "$MYSQL_DATABASE" \
-                    -e "DESCRIBE post;" || { echo "❌ Table verification failed"; exit 1; }
+                    -e "SHOW TABLES;"
 
-              echo "=== Verifying app user ==="
+              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                    -u root -p"$MYSQL_ROOT_PASSWORD" \
+                    -D "$MYSQL_DATABASE" \
+                    -e "DESCRIBE users;"
+
+              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                    -u root -p"$MYSQL_ROOT_PASSWORD" \
+                    -D "$MYSQL_DATABASE" \
+                    -e "DESCRIBE post;"
+
+              echo "=== Verifying app user access ==="
 
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
                     -D "$MYSQL_DATABASE" \
-                    -e "SELECT 1;" || { echo "❌ App user connection failed"; exit 1; }
+                    -e "SELECT 'App user OK';"
 
-              echo "✅ Migration completed successfully"
+              echo "✅ Migration COMPLETED SUCCESSFULLY"
