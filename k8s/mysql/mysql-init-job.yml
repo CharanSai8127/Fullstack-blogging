@@ -6,10 +6,11 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "2"  # After MySQL
 
 spec:
   backoffLimit: 3
+  ttlSecondsAfterFinished: 300
 
   template:
     metadata:
@@ -41,45 +42,62 @@ spec:
           args:
             - |
               set -e
+              # No -u until secrets loaded
 
-              echo "Loading Vault secrets..."
+              echo "=== Loading Vault secrets ==="
               source /vault/secrets/db
+              set -u  # Now safe
 
-              echo "Waiting for MySQL to be ready..."
+              echo "Secrets: DB=$MYSQL_DATABASE Host=$MYSQL_HOST"
 
-              for i in $(seq 1 60); do
-                if mysql -h "$MYSQL_HOST" \
-                         -u root \
-                         -p"$MYSQL_ROOT_PASSWORD" \
-                         -e "SELECT 1" > /dev/null 2>&1; then
-                  echo "MySQL is ready!"
+              echo "=== Waiting MySQL (150s) ==="
+              for i in $(seq 1 30); do
+                if mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                         -u root -p"$MYSQL_ROOT_PASSWORD" \
+                         -e "SELECT 1" >/dev/null 2>&1; then
+                  echo "✓ MySQL ready"
                   break
                 fi
-                echo "Waiting for MySQL... attempt $i/60"
+                echo "Waiting... ($i/30)"
                 sleep 5
-              done
+              done || exit 1
 
-              echo "Running migrations..."
+              echo "=== SAFE Migration ==="
+              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                    -u root -p"$MYSQL_ROOT_PASSWORD" <<'EOSQL'
+              CREATE DATABASE IF NOT EXISTS `${MYSQL_DATABASE}`;
+              USE `${MYSQL_DATABASE}`;
 
-              mysql -h "$MYSQL_HOST" \
-                    -u root \
-                    -p"$MYSQL_ROOT_PASSWORD" <<EOF
-
-              CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;
-              USE $MYSQL_DATABASE;
-
-              CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
-              GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
+              CREATE USER IF NOT EXISTS `'${MYSQL_USER}'`@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              GRANT ALL PRIVILEGES ON `${MYSQL_DATABASE}`.* TO `'${MYSQL_USER}'`@'%';
               FLUSH PRIVILEGES;
 
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255),
+                title VARCHAR(255) NOT NULL,
                 content TEXT,
-                user_id BIGINT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
               );
 
-              EOF
+              SET @col_exists = (
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = '${MYSQL_DATABASE}'
+                  AND TABLE_NAME = 'post' AND COLUMN_NAME = 'user_id'
+              );
 
-              echo "Migration completed successfully."
+              SET @sql = IF(@col_exists = 0,
+                'ALTER TABLE post ADD COLUMN user_id BIGINT NOT NULL DEFAULT 0',
+                'SELECT "user_id exists"'
+              );
+
+              PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+              DESCRIBE post;
+              EOSQL
+
+              echo "✓ Migration done"
+              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
+                    -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
+                    -D "$MYSQL_DATABASE" \
+                    -e "SELECT 'Backend ready' as status;"
