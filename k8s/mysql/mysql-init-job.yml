@@ -54,24 +54,38 @@ spec:
                   echo "✓ MySQL ready"
                   break
                 fi
+<<<<<<< HEAD
                 echo "Waiting... ($i/30)"
                 sleep 5
               done
 
               echo "=== Running FULL SCHEMA migration ==="
+=======
+                sleep 5
+              done
+
+              echo "=== Running schema migration ==="
+>>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
 
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u root -p"$MYSQL_ROOT_PASSWORD" <<EOSQL
 
+<<<<<<< HEAD
               -- Ensure database exists
               CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
               USE \`${MYSQL_DATABASE}\`;
 
               -- Ensure application user
+=======
+              CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+              USE \`${MYSQL_DATABASE}\`;
+
+>>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
               CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
               GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
               FLUSH PRIVILEGES;
 
+<<<<<<< HEAD
               -- USERS TABLE (required by app)
               CREATE TABLE IF NOT EXISTS users (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -120,3 +134,22 @@ spec:
                     -e "SELECT 'App user OK';"
 
               echo "✅ Migration COMPLETED SUCCESSFULLY"
+=======
+              CREATE TABLE IF NOT EXISTS users (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) UNIQUE,
+                password VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS post (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                content TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                user_id BIGINT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+              );
+
+              EOSQL
+
+              echo " Migration completed"
+>>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
