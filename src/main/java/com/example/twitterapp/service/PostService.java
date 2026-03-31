@@ -4,7 +4,6 @@ import com.example.twitterapp.model.Post;
 import com.example.twitterapp.repository.PostRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -17,7 +16,7 @@ public class PostService {
     }
 
     public void save(Post post) {
-        post.setCreatedAt(LocalDateTime.now());
+        // createdAt is handled automatically by @PrePersist
         postRepository.save(post);
     }
 
