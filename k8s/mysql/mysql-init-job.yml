@@ -18,9 +18,9 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "mysql-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secrets/data/db"
         vault.hashicorp.com/agent-inject-template-db: |
-          {{- with secret "secret/data/db" -}}
+          {{- with secret "secrets/data/db" -}}
           export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
@@ -32,12 +32,14 @@ spec:
     spec:
       serviceAccountName: vault-mysql
       restartPolicy: OnFailure
+
       nodeSelector:
         role: workload
 
       containers:
         - name: mysql-migration
           image: mysql:8.0.36
+
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -54,39 +56,22 @@ spec:
                   echo "✓ MySQL ready"
                   break
                 fi
-<<<<<<< HEAD
                 echo "Waiting... ($i/30)"
                 sleep 5
               done
 
               echo "=== Running FULL SCHEMA migration ==="
-=======
-                sleep 5
-              done
-
-              echo "=== Running schema migration ==="
->>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
 
               mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
                     -u root -p"$MYSQL_ROOT_PASSWORD" <<EOSQL
 
-<<<<<<< HEAD
-              -- Ensure database exists
               CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
               USE \`${MYSQL_DATABASE}\`;
 
-              -- Ensure application user
-=======
-              CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
-              USE \`${MYSQL_DATABASE}\`;
-
->>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
               CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
               GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
               FLUSH PRIVILEGES;
 
-<<<<<<< HEAD
-              -- USERS TABLE (required by app)
               CREATE TABLE IF NOT EXISTS users (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
@@ -94,7 +79,6 @@ spec:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
               );
 
-              -- POST TABLE
               CREATE TABLE IF NOT EXISTS post (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255) NOT NULL,
@@ -103,9 +87,6 @@ spec:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
               );
-
-              -- Ensure user_id column exists (extra safety)
-              ALTER TABLE post ADD COLUMN IF NOT EXISTS user_id BIGINT NOT NULL DEFAULT 0;
 
               EOSQL
 
@@ -116,40 +97,4 @@ spec:
                     -D "$MYSQL_DATABASE" \
                     -e "SHOW TABLES;"
 
-              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-                    -u root -p"$MYSQL_ROOT_PASSWORD" \
-                    -D "$MYSQL_DATABASE" \
-                    -e "DESCRIBE users;"
-
-              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-                    -u root -p"$MYSQL_ROOT_PASSWORD" \
-                    -D "$MYSQL_DATABASE" \
-                    -e "DESCRIBE post;"
-
-              echo "=== Verifying app user access ==="
-
-              mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-                    -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
-                    -D "$MYSQL_DATABASE" \
-                    -e "SELECT 'App user OK';"
-
               echo "✅ Migration COMPLETED SUCCESSFULLY"
-=======
-              CREATE TABLE IF NOT EXISTS users (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) UNIQUE,
-                password VARCHAR(255)
-              );
-
-              CREATE TABLE IF NOT EXISTS post (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                content TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                user_id BIGINT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-              );
-
-              EOSQL
-
-              echo " Migration completed"
->>>>>>> 7f71e45 (fix: align schema, backend config, vault env, and memory settings)
