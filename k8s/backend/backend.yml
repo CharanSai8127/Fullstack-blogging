@@ -19,9 +19,9 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "mysql-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secrets/data/db"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/db"
         vault.hashicorp.com/agent-inject-template-db: |
-          {{- with secret "secrets/data/db" -}}
+          {{- with secret "secret/data/db" -}}
           export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
           export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
           export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
