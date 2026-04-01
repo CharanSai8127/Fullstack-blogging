@@ -1,1 +1,3 @@
-q
+target/
+*.jar
+*.class
