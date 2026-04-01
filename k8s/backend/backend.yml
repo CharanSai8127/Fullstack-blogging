@@ -40,25 +40,18 @@ spec:
         - |
           set -e
           
-          echo "=== Loading Vault secrets ==="
+          echo "=== 1. Loading Vault secrets ==="
           source /vault/secrets/db
-          echo "DB Config: $MYSQL_HOST:$MYSQL_PORT / $MYSQL_DATABASE"
+          echo "DB Config: mysql:3306 / $MYSQL_DATABASE"
           
-          echo "=== Waiting for MySQL service (using timeout) ==="
-          # FIXED: Use timeout + bash cat instead of /dev/tcp (works universally)
-          until timeout 2 bash -c "cat < /dev/null >/dev/tcp/mysql/3306"; do
-            echo "Waiting for mysql:3306... (retrying)"
-            sleep 3
-          done
-          
-          echo "✅ MySQL TCP connection successful!"
-          
-          echo "=== Starting Spring Boot application ==="
+          echo "=== 2. Starting Spring Boot (auto DB connect) ==="
+          # Skip fragile TCP check - Spring Boot handles DB connection/retry
           exec java \
-            -Dspring.datasource.url="jdbc:mysql://mysql:3306/$MYSQL_DATABASE?useSSL=false&allowPublicKeyRetrieval=true" \
+            -Dspring.datasource.url="jdbc:mysql://mysql:3306/$MYSQL_DATABASE?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&autoReconnect=true" \
             -Dspring.datasource.username="$MYSQL_USER" \
             -Dspring.datasource.password="$MYSQL_PASSWORD" \
             -Dspring.jpa.hibernate.ddl-auto=validate \
+            -Dspring.jpa.show-sql=true \
             -jar /usr/src/app/app.jar
         ports:
         - containerPort: 8080
@@ -69,25 +62,24 @@ spec:
           limits:
             cpu: "500m"
             memory: "1.5Gi"
-        # Increased tolerances for Spring Boot startup
         startupProbe:
           httpGet:
             path: /
             port: 8080
-          failureThreshold: 90    # 90 * 5s = 7.5 minutes
+          failureThreshold: 120  # 10 minutes tolerance
           periodSeconds: 5
         readinessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 30  # Give Spring more time
+          initialDelaySeconds: 45
           periodSeconds: 10
-          failureThreshold: 9
-          timeoutSeconds: 3
+          failureThreshold: 12
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 120 # 2 minutes after startup
-          periodSeconds: 20
+          initialDelaySeconds: 180
+          periodSeconds: 30
           failureThreshold: 3
