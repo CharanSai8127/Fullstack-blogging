@@ -18,7 +18,7 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
-        vault.hashicorp.com/role: "mysql-role"
+        vault.hashicorp.com/role: "db-backend-role"
         vault.hashicorp.com/agent-inject-secret-db: "secret/db"
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
