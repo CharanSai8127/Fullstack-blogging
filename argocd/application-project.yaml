@@ -3,25 +3,33 @@ kind: AppProject
 metadata:
   name: application-project
   namespace: argocd
+
 spec:
   description: Project for blog application workloads
 
+  #  Allowed Git repos
   sourceRepos:
     - https://github.com/CharanSai8127/Fullstack-blogging
 
+  #  Allowed deployment targets (FIXED)
   destinations:
     - namespace: blog-prod
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
       server: https://kubernetes.default.svc
     - namespace: argocd
       server: https://kubernetes.default.svc
 
+  #  Allow all cluster-scoped resources (safe for your setup)
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
 
+  #  Allow all namespaced resources
   namespaceResourceWhitelist:
     - group: "*"
       kind: "*"
 
+  #  Warn if something exists outside Git
   orphanedResources:
     warn: true

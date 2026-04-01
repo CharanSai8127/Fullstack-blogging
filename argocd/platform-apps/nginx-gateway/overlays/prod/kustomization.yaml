@@ -23,3 +23,15 @@ patches:
                 operator: Equal
                 value: "true"
                 effect: NoSchedule
+
+           
+  - target:
+      kind: Service
+      name: nginx-gateway
+    patch: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: nginx-gateway
+      spec:
+        type: LoadBalancer
