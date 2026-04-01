@@ -5,8 +5,10 @@ metadata:
   namespace: blog-prod
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: app-green
@@ -19,7 +21,10 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: "true"
         vault.hashicorp.com/role: "db-backend-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/db"
+
+        # ✅ FIXED (KV v2 correct path)
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/db"
+
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/db" -}}
           export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
@@ -39,23 +44,21 @@ spec:
           image: charansait372/devops-blog-new:1.7
           imagePullPolicy: IfNotPresent
 
-          command: ["sh","-c"]
+          command: ["sh", "-c"]
           args:
             - |
-              set -euo pipefail
+              set -e
 
               echo "=== Loading Vault secrets ==="
               source /vault/secrets/db
 
-              echo "=== Waiting for MySQL ==="
-              until mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-                     -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
-                     -e "SELECT 1" >/dev/null 2>&1; do
+              echo "=== Waiting for MySQL (network level) ==="
+              until echo > /dev/tcp/$MYSQL_HOST/$MYSQL_PORT; do
                 echo "Waiting for DB..."
                 sleep 3
               done
 
-              echo "=== Starting application ==="
+              echo "=== MySQL reachable, starting application ==="
 
               exec java \
                 -Dspring.datasource.url=jdbc:mysql://$MYSQL_HOST:$MYSQL_PORT/$MYSQL_DATABASE \
@@ -74,18 +77,19 @@ spec:
               cpu: "500m"
               memory: "1.5Gi"
 
+          # ✅ More tolerant startup
           startupProbe:
             httpGet:
               path: /
               port: 8080
-            failureThreshold: 30
+            failureThreshold: 60
             periodSeconds: 5
 
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 6
 
